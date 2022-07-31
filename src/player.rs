@@ -1,8 +1,9 @@
-use crate::actions::Actions;
-use crate::loading::TextureAssets;
-use crate::GameState;
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
+
+use crate::actions::Actions;
+use crate::GameState;
+use crate::loading::{AtlasJson, TextureAssets};
 
 pub struct PlayerPlugin;
 
@@ -17,22 +18,31 @@ impl Plugin for PlayerPlugin {
             GameState::Playing,
             SystemSet::new().with_system(spawn_player),
         )
-        .add_system_set(
-            ConditionSet::new()
-                .run_in_state(GameState::Playing)
-                .with_system(move_player)
-                .into(),
-        );
+            .add_system_set(
+                ConditionSet::new()
+                    .run_in_state(GameState::Playing)
+                    .with_system(move_player)
+                    .into(),
+            );
     }
 }
 
-fn spawn_player(mut commands: Commands, textures: Res<TextureAssets>) {
+fn spawn_player(
+    mut commands: Commands,
+    textures: Res<TextureAssets>,
+    texts: Res<Assets<AtlasJson>>,
+) {
+    let json = texts.get(&textures.cyborg_atlas_json).unwrap();
+    println!("{:?}", json);
+    let mut sprite_sheet_bundle = SpriteSheetBundle {
+        texture_atlas: textures.cyborg_atlas.clone(),
+        transform: Transform::from_translation(Vec3::new(0., 0., 1.)),
+        ..Default::default()
+    };
+    sprite_sheet_bundle.sprite.index = 2;
     commands
-        .spawn_bundle(SpriteBundle {
-            texture: textures.texture_bevy.clone(),
-            transform: Transform::from_translation(Vec3::new(0., 0., 1.)),
-            ..Default::default()
-        })
+        .spawn_bundle(sprite_sheet_bundle)
+
         .insert(Player);
 }
 
