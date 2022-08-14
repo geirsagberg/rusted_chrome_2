@@ -1,14 +1,25 @@
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
+use serde::Deserialize;
 
 use crate::actions::Actions;
+use crate::animation::Animation;
+use crate::atlas_data::AnimationSpriteSheetMeta;
 use crate::GameState;
-use crate::loading::{AtlasJson, TextureAssets};
+use crate::loading::TextureAssets;
 
 pub struct PlayerPlugin;
 
 #[derive(Component)]
 pub struct Player;
+
+#[derive(Component, Debug, PartialEq, Eq, Hash, Clone, Copy, Deserialize)]
+pub enum PlayerState {
+    Idle,
+    Walking,
+    Running,
+    Jumping,
+}
 
 /// This plugin handles player related stuff like movement
 /// Player logic is only active during the State `GameState::Playing`
@@ -27,23 +38,42 @@ impl Plugin for PlayerPlugin {
     }
 }
 
-fn spawn_player(
-    mut commands: Commands,
-    textures: Res<TextureAssets>,
-    texts: Res<Assets<AtlasJson>>,
-) {
-    let json = texts.get(&textures.cyborg_atlas_json).unwrap();
-    println!("{:?}", json);
-    let mut sprite_sheet_bundle = SpriteSheetBundle {
-        texture_atlas: textures.cyborg_atlas.clone(),
-        transform: Transform::from_translation(Vec3::new(0., 0., 1.)),
-        ..Default::default()
-    };
-    sprite_sheet_bundle.sprite.index = 2;
-    commands
-        .spawn_bundle(sprite_sheet_bundle)
+#[derive(Bundle)]
+pub struct AnimatedSpriteSheetBundle {
+    #[bundle]
+    sprite_sheet: SpriteSheetBundle,
+    animation: Animation,
+}
 
-        .insert(Player);
+#[derive(Bundle)]
+pub struct PlayerBundle {
+    #[bundle]
+    animated_sprite_sheet: AnimatedSpriteSheetBundle,
+    player: Player,
+}
+
+fn spawn_player(mut commands: Commands, textures: Res<TextureAssets>, animated_sprite_sheet_assets: Res<Assets<AnimationSpriteSheetMeta>>) {
+    let cyborg = animated_sprite_sheet_assets.get(&textures.cyborg).unwrap();
+    let mut animation = Animation::new(
+        cyborg.animation_frame_duration,
+        cyborg.animations.clone(),
+    );
+    animation.play("idle", true);
+    commands
+        .spawn_bundle(
+            PlayerBundle {
+                animated_sprite_sheet: AnimatedSpriteSheetBundle {
+                    sprite_sheet: SpriteSheetBundle {
+                        sprite: default(),
+                        texture_atlas: cyborg.atlas_handle.clone(),
+                        transform: Transform::from_xyz(0., 0., 1.),
+                        ..default()
+                    },
+                    animation,
+                },
+                player: Player,
+            }
+        );
 }
 
 fn move_player(

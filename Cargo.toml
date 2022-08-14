@@ -5,33 +5,36 @@ publish = false
 authors = ["Geir Sagberg <geir.sagberg@gmail.com>"]
 edition = "2021"
 
+# Enable optimizations for dependencies but not for our code
 [profile.dev.package."*"]
 opt-level = 3
+debug = false
 
 [profile.dev]
-opt-level = 1
+# As of Jul/2022, opt-level=1 takes a considerable compilation time; with such configuration,
+# profiling a (incremental) build showed that the large part of the time is spent in optimization
+# passes.
+# Since it's not clear why this happens and how to mitigate it, optimizations are entirely
+# disabled.
+# It's possible to specify opt-level=1 with lto=false, which is faster, but it's still considerably
+# slower than opt-level=0.
 
 [profile.release]
 lto = true
 codegen-units = 1
 
 [features]
-default = [
-    "bevy_asset_loader/stageless",
-    "bevy_asset_loader/2d"
-]
-
 dev = [
     "bevy/dynamic",
 ]
 
 [dependencies]
-bevy = { git = "https://github.com/bevyengine/bevy" }
+bevy = "0.8"
 rand = "0.8.3"
-bevy_asset_loader = { git = "https://github.com/geirsagberg/bevy_asset_loader", branch = "bevy_main" }
-iyes_loopless = { git = "https://github.com/iyesgames/iyes_loopless", branch = "bevy_main" }
+bevy_asset_loader = { version = "0.12", features = ["stageless", "2d"] }
+iyes_loopless = "0.7"
 anyhow = "1.0.58"
-serde_json = "1.0.82"
+serde_yaml = "0.9.2"
 serde = "1.0.140"
 
 [target.'cfg(target_os = "linux")'.dependencies]

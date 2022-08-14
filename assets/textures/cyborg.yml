@@ -1,0 +1,17 @@
+image: cyborg.png
+tile_size: [48, 48]
+columns: 6
+rows: 5
+animation_frame_duration: 0.12
+animations:
+  idle:
+    frames: [0, 3]
+    repeat: true
+  jumping:
+    frames: [6, 9]
+  running:
+    frames: [12, 17]
+    repeat: true
+  walking:
+    frames: [24, 29]
+    repeat: true

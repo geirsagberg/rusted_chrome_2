@@ -1,14 +1,14 @@
 // disable console on windows for release builds
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use bevy::prelude::*;
 use bevy::DefaultPlugins;
+use bevy::prelude::*;
+
 use rusted_chrome::GamePlugin;
 
 fn main() {
     App::new()
         .insert_resource(Msaa { samples: 1 })
-        .insert_resource(ClearColor(Color::rgb(0.4, 0.4, 0.4)))
         .insert_resource(WindowDescriptor {
             width: 800.,
             height: 600.,
