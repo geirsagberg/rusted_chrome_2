@@ -3,13 +3,12 @@ use bevy::app::App;
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::prelude::*;
 use iyes_loopless::prelude::AppLooplessStateExt;
+use leafwing_input_manager::prelude::*;
 
-use actions::ActionsPlugin;
 use animation::AnimationPlugin;
 use loading::LoadingPlugin;
 use player::PlayerPlugin;
 
-mod actions;
 mod animation;
 mod atlas_data;
 mod loading;
@@ -28,13 +27,19 @@ enum GameState {
 
 pub struct GamePlugin;
 
+
+#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug)]
+enum PlayerAction {
+    Move
+}
+
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(ClearColor(Color::BLACK))
             .add_loopless_state(GameState::Loading)
             .add_startup_system(setup_camera)
+            .add_plugin(InputManagerPlugin::<PlayerAction>::default())
             .add_plugin(LoadingPlugin)
-            .add_plugin(ActionsPlugin)
             .add_plugin(PlayerPlugin)
             .add_plugin(AnimationPlugin);
 

@@ -1,25 +1,16 @@
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
-use serde::Deserialize;
+use leafwing_input_manager::prelude::*;
 
-use crate::actions::Actions;
+use crate::{GameState, PlayerAction};
 use crate::animation::Animation;
 use crate::atlas_data::AnimationSpriteSheetMeta;
-use crate::GameState;
 use crate::loading::TextureAssets;
 
 pub struct PlayerPlugin;
 
 #[derive(Component)]
 pub struct Player;
-
-#[derive(Component, Debug, PartialEq, Eq, Hash, Clone, Copy, Deserialize)]
-pub enum PlayerState {
-    Idle,
-    Walking,
-    Running,
-    Jumping,
-}
 
 /// This plugin handles player related stuff like movement
 /// Player logic is only active during the State `GameState::Playing`
@@ -38,59 +29,55 @@ impl Plugin for PlayerPlugin {
     }
 }
 
-#[derive(Bundle)]
-pub struct AnimatedSpriteSheetBundle {
-    #[bundle]
-    sprite_sheet: SpriteSheetBundle,
-    animation: Animation,
-}
-
-#[derive(Bundle)]
-pub struct PlayerBundle {
-    #[bundle]
-    animated_sprite_sheet: AnimatedSpriteSheetBundle,
-    player: Player,
-}
-
-fn spawn_player(mut commands: Commands, textures: Res<TextureAssets>, animated_sprite_sheet_assets: Res<Assets<AnimationSpriteSheetMeta>>) {
+fn spawn_player(
+    mut commands: Commands,
+    textures: Res<TextureAssets>,
+    animated_sprite_sheet_assets: Res<Assets<AnimationSpriteSheetMeta>>) {
     let cyborg = animated_sprite_sheet_assets.get(&textures.cyborg).unwrap();
     let mut animation = Animation::new(
         cyborg.animation_frame_duration,
         cyborg.animations.clone(),
     );
     animation.play("idle", true);
+    let mut input_map = InputMap::default();
+
+    input_map.insert(VirtualDPad {
+        up: KeyCode::W.into(),
+        down: KeyCode::S.into(),
+        left: KeyCode::A.into(),
+        right: KeyCode::D.into(),
+    }, PlayerAction::Move);
     commands
-        .spawn_bundle(
-            PlayerBundle {
-                animated_sprite_sheet: AnimatedSpriteSheetBundle {
-                    sprite_sheet: SpriteSheetBundle {
-                        sprite: default(),
-                        texture_atlas: cyborg.atlas_handle.clone(),
-                        transform: Transform::from_xyz(0., 0., 1.),
-                        ..default()
-                    },
-                    animation,
-                },
-                player: Player,
-            }
-        );
+        .spawn_bundle(SpriteSheetBundle {
+            sprite: default(),
+            texture_atlas: cyborg.atlas_handle.clone(),
+            transform: Transform::from_xyz(0., 0., 1.),
+            ..default()
+        })
+        .insert(animation)
+        .insert(Player)
+        .insert_bundle(InputManagerBundle::<PlayerAction> {
+            action_state: ActionState::default(),
+            input_map,
+        });
 }
 
 fn move_player(
     time: Res<Time>,
-    actions: Res<Actions>,
-    mut player_query: Query<&mut Transform, With<Player>>,
+    mut player_query: Query<(&mut Transform, &ActionState<PlayerAction>), With<Player>>,
 ) {
-    if actions.player_movement.is_none() {
-        return;
-    }
     let speed = 150.;
-    let movement = Vec3::new(
-        actions.player_movement.unwrap().x * speed * time.delta_seconds(),
-        actions.player_movement.unwrap().y * speed * time.delta_seconds(),
-        0.,
-    );
-    for mut player_transform in player_query.iter_mut() {
-        player_transform.translation += movement;
+
+    for (mut transform, action_state) in player_query.iter_mut() {
+        if action_state.pressed(PlayerAction::Move) {
+            let axis_pair = action_state.axis_pair(PlayerAction::Move).unwrap();
+            let movement = Vec3::new(
+                axis_pair.x() * speed * time.delta_seconds(),
+                axis_pair.y() * speed * time.delta_seconds(),
+                0.,
+            );
+
+            transform.translation += movement;
+        }
     }
 }
