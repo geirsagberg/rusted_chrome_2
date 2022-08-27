@@ -1,10 +1,6 @@
 use std::ops::Range;
 
-use bevy::{
-    prelude::{App, Component, Plugin, Query, Res, Time, Timer},
-    sprite::TextureAtlasSprite,
-    utils::HashMap,
-};
+use bevy::{prelude::*, sprite::TextureAtlasSprite, utils::HashMap};
 use iyes_loopless::condition::ConditionSet;
 use serde::de::SeqAccess;
 use serde::Deserializer;
@@ -15,6 +11,7 @@ pub struct AnimationPlugin;
 
 impl Plugin for AnimationPlugin {
     fn build(&self, app: &mut App) {
+        app.add_system(set_facing);
         app.add_system_set_to_stage(
             CoreStage::Last,
             ConditionSet::new()
@@ -53,8 +50,8 @@ pub struct Clip {
 }
 
 fn deserialize_range_from_array<'de, D>(de: D) -> Result<Range<usize>, D::Error>
-    where
-        D: Deserializer<'de>,
+where
+    D: Deserializer<'de>,
 {
     de.deserialize_tuple(2, RangeVisitor)
 }
@@ -69,8 +66,8 @@ impl<'de> serde::de::Visitor<'de> for RangeVisitor {
     }
 
     fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
-        where
-            A: SeqAccess<'de>,
+    where
+        A: SeqAccess<'de>,
     {
         let start: usize = if let Some(start) = seq.next_element()? {
             start
@@ -199,5 +196,15 @@ fn animation_cycling(mut query: Query<(&mut TextureAtlasSprite, &mut Animation)>
 fn animation_flipping(mut query: Query<(&mut TextureAtlasSprite, &Facing)>) {
     for (mut texture_atlas_sprite, facing) in query.iter_mut() {
         texture_atlas_sprite.flip_x = facing.is_left();
+    }
+}
+
+fn set_facing(mut query: Query<(&Transform, &mut Facing)>) {
+    for (transform, mut facing) in query.iter_mut() {
+        if transform.translation.x < 0.0 {
+            facing.set(Facing::Left);
+        } else {
+            facing.set(Facing::Right);
+        }
     }
 }

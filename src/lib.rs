@@ -1,7 +1,11 @@
 use bevy::app::App;
 #[cfg(debug_assertions)]
-use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
+use bevy::diagnostic::LogDiagnosticsPlugin;
 use bevy::prelude::*;
+use bevy_rapier2d::{
+    prelude::{NoUserData, RapierPhysicsPlugin},
+    render::RapierDebugRenderPlugin,
+};
 use iyes_loopless::prelude::AppLooplessStateExt;
 use leafwing_input_manager::prelude::*;
 
@@ -27,10 +31,9 @@ enum GameState {
 
 pub struct GamePlugin;
 
-
 #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug)]
 enum PlayerAction {
-    Move
+    Move,
 }
 
 impl Plugin for GamePlugin {
@@ -41,12 +44,14 @@ impl Plugin for GamePlugin {
             .add_plugin(InputManagerPlugin::<PlayerAction>::default())
             .add_plugin(LoadingPlugin)
             .add_plugin(PlayerPlugin)
+            .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(24.0))
+            .add_plugin(RapierDebugRenderPlugin::default())
             .add_plugin(AnimationPlugin);
 
         #[cfg(debug_assertions)]
         {
-            app.add_plugin(FrameTimeDiagnosticsPlugin::default())
-                .add_plugin(LogDiagnosticsPlugin::default());
+            app.add_plugin(LogDiagnosticsPlugin::default());
+            // .add_plugin(FrameTimeDiagnosticsPlugin::default())
         }
     }
 }
