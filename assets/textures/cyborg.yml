@@ -1,5 +1,5 @@
 image: cyborg.png
-tile_size: [48, 48]
+tile_size: [32, 48]
 columns: 6
 rows: 5
 animation_frame_duration: 0.12

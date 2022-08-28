@@ -1,21 +1,21 @@
-use bevy::app::App;
 #[cfg(debug_assertions)]
 use bevy::diagnostic::LogDiagnosticsPlugin;
 use bevy::prelude::*;
-use bevy_rapier2d::{
-    prelude::{NoUserData, RapierPhysicsPlugin},
-    render::RapierDebugRenderPlugin,
-};
+use bevy::{app::App, render::texture::ImageSettings};
+use heron::PhysicsPlugin;
 use iyes_loopless::prelude::AppLooplessStateExt;
 use leafwing_input_manager::prelude::*;
 
 use animation::AnimationPlugin;
 use loading::LoadingPlugin;
+use platforms::PlatformsPlugin;
 use player::PlayerPlugin;
 
 mod animation;
 mod atlas_data;
+pub mod components;
 mod loading;
+mod platforms;
 mod player;
 
 // This example game uses States to separate logic
@@ -39,13 +39,14 @@ enum PlayerAction {
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(ClearColor(Color::BLACK))
+            .insert_resource(ImageSettings::default_nearest())
             .add_loopless_state(GameState::Loading)
             .add_startup_system(setup_camera)
             .add_plugin(InputManagerPlugin::<PlayerAction>::default())
             .add_plugin(LoadingPlugin)
             .add_plugin(PlayerPlugin)
-            .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(24.0))
-            .add_plugin(RapierDebugRenderPlugin::default())
+            .add_plugin(PlatformsPlugin)
+            .add_plugin(PhysicsPlugin::default())
             .add_plugin(AnimationPlugin);
 
         #[cfg(debug_assertions)]
@@ -57,5 +58,7 @@ impl Plugin for GamePlugin {
 }
 
 fn setup_camera(mut commands: Commands) {
-    commands.spawn_bundle(Camera2dBundle::default());
+    let mut bundle = Camera2dBundle::default();
+    bundle.projection.scale = 0.5;
+    commands.spawn_bundle(bundle);
 }

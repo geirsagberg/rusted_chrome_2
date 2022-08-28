@@ -1,10 +1,13 @@
-use bevy::math::vec3;
+use bevy::math::{vec2, vec3};
 use bevy::prelude::*;
+use bevy::sprite::Anchor;
+use heron::{CollisionShape, RigidBody, RotationConstraints, Velocity};
 use iyes_loopless::prelude::*;
 use leafwing_input_manager::prelude::*;
 
 use crate::animation::Animation;
 use crate::atlas_data::AnimationSpriteSheetMeta;
+use crate::components::facing::Facing;
 use crate::loading::TextureAssets;
 use crate::{GameState, PlayerAction};
 
@@ -52,32 +55,38 @@ fn spawn_player(
     );
     commands
         .spawn_bundle(SpriteSheetBundle {
-            sprite: default(),
+            sprite: TextureAtlasSprite {
+                anchor: Anchor::Custom(vec2(0., -0.125)),
+                ..default()
+            },
             texture_atlas: cyborg.atlas_handle.clone(),
             transform: Transform::from_xyz(0., 0., 1.),
             ..default()
         })
+        .insert(RigidBody::Dynamic)
+        .insert(RotationConstraints::lock())
+        .insert(CollisionShape::Capsule {
+            half_segment: 8.,
+            radius: 8.,
+        })
+        .insert(Facing::Right)
         .insert(animation)
         .insert(Player)
+        .insert(Velocity::from_linear(vec3(0., 0., 0.)))
         .insert_bundle(InputManagerBundle::<PlayerAction> {
             action_state: ActionState::default(),
             input_map,
         });
 }
 
-fn move_player(
-    time: Res<Time>,
-    mut player_query: Query<(&mut Transform, &ActionState<PlayerAction>), With<Player>>,
-) {
+fn move_player(mut player_query: Query<(&mut Velocity, &ActionState<PlayerAction>), With<Player>>) {
     let speed = 150.;
 
-    for (mut transform, action_state) in player_query.iter_mut() {
-        if action_state.pressed(PlayerAction::Move) {
-            let axis_pair = action_state.axis_pair(PlayerAction::Move).unwrap();
-            let movement = vec3(axis_pair.x(), axis_pair.y(), 0.) * speed * time.delta_seconds();
-
-            transform.translation += movement;
-        }
+    for (mut velocity, action_state) in player_query.iter_mut() {
+        let axis_pair = action_state
+            .axis_pair(PlayerAction::Move)
+            .unwrap_or_default();
+        velocity.linear = vec3(axis_pair.x(), axis_pair.y(), 0.) * speed;
     }
 }
 

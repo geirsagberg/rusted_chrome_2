@@ -1,11 +1,12 @@
 use std::ops::Range;
 
 use bevy::{prelude::*, sprite::TextureAtlasSprite, utils::HashMap};
+use heron::Velocity;
 use iyes_loopless::condition::ConditionSet;
 use serde::de::SeqAccess;
 use serde::Deserializer;
 
-use crate::{CoreStage, GameState};
+use crate::{components::facing::Facing, CoreStage, GameState};
 
 pub struct AnimationPlugin;
 
@@ -20,23 +21,6 @@ impl Plugin for AnimationPlugin {
                 .with_system(animation_cycling)
                 .into(),
         );
-    }
-}
-
-#[cfg_attr(feature = "debug", derive(bevy_inspector_egui::Inspectable))]
-#[derive(Component, PartialEq, Eq, Clone)]
-pub enum Facing {
-    Left,
-    Right,
-}
-
-impl Facing {
-    pub fn is_left(&self) -> bool {
-        self == &Facing::Left
-    }
-
-    pub fn set(&mut self, facing: Facing) {
-        *self = facing;
     }
 }
 
@@ -199,11 +183,11 @@ fn animation_flipping(mut query: Query<(&mut TextureAtlasSprite, &Facing)>) {
     }
 }
 
-fn set_facing(mut query: Query<(&Transform, &mut Facing)>) {
-    for (transform, mut facing) in query.iter_mut() {
-        if transform.translation.x < 0.0 {
+fn set_facing(mut query: Query<(&Velocity, &mut Facing)>) {
+    for (velocity, mut facing) in query.iter_mut() {
+        if velocity.linear.x < 0. {
             facing.set(Facing::Left);
-        } else {
+        } else if velocity.linear.x > 0. {
             facing.set(Facing::Right);
         }
     }
