@@ -1,8 +1,10 @@
 #[cfg(debug_assertions)]
 use bevy::diagnostic::LogDiagnosticsPlugin;
+use bevy::math::vec2;
 use bevy::prelude::*;
 use bevy::{app::App, render::texture::ImageSettings};
-use heron::PhysicsPlugin;
+use bevy_rapier2d::prelude::{NoUserData, RapierConfiguration, RapierPhysicsPlugin};
+use bevy_rapier2d::render::RapierDebugRenderPlugin;
 use iyes_loopless::prelude::AppLooplessStateExt;
 use leafwing_input_manager::prelude::*;
 
@@ -34,6 +36,7 @@ pub struct GamePlugin;
 #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug)]
 enum PlayerAction {
     Move,
+    Jump,
 }
 
 impl Plugin for GamePlugin {
@@ -46,7 +49,12 @@ impl Plugin for GamePlugin {
             .add_plugin(LoadingPlugin)
             .add_plugin(PlayerPlugin)
             .add_plugin(PlatformsPlugin)
-            .add_plugin(PhysicsPlugin::default())
+            .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(16.))
+            .add_plugin(RapierDebugRenderPlugin::default())
+            .insert_resource(RapierConfiguration {
+                gravity: vec2(0., -9.81 * 16.),
+                ..default()
+            })
             .add_plugin(AnimationPlugin);
 
         #[cfg(debug_assertions)]

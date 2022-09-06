@@ -1,7 +1,7 @@
 use std::ops::Range;
 
 use bevy::{prelude::*, sprite::TextureAtlasSprite, utils::HashMap};
-use heron::Velocity;
+use bevy_rapier2d::prelude::Velocity;
 use iyes_loopless::condition::ConditionSet;
 use serde::de::SeqAccess;
 use serde::Deserializer;
@@ -185,9 +185,9 @@ fn animation_flipping(mut query: Query<(&mut TextureAtlasSprite, &Facing)>) {
 
 fn set_facing(mut query: Query<(&Velocity, &mut Facing)>) {
     for (velocity, mut facing) in query.iter_mut() {
-        if velocity.linear.x < 0. {
+        if velocity.linvel.x < 0. {
             facing.set(Facing::Left);
-        } else if velocity.linear.x > 0. {
+        } else if velocity.linvel.x > 0. {
             facing.set(Facing::Right);
         }
     }

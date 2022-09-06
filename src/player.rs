@@ -1,7 +1,7 @@
-use bevy::math::{vec2, vec3};
+use bevy::math::vec2;
 use bevy::prelude::*;
 use bevy::sprite::Anchor;
-use heron::{CollisionShape, RigidBody, RotationConstraints, Velocity};
+use bevy_rapier2d::prelude::*;
 use iyes_loopless::prelude::*;
 use leafwing_input_manager::prelude::*;
 
@@ -44,15 +44,17 @@ fn spawn_player(
     animation.play("idle", true);
     let mut input_map = InputMap::default();
 
-    input_map.insert(
-        VirtualDPad {
-            up: KeyCode::W.into(),
-            down: KeyCode::S.into(),
-            left: KeyCode::A.into(),
-            right: KeyCode::D.into(),
-        },
-        PlayerAction::Move,
-    );
+    input_map
+        .insert(
+            VirtualDPad {
+                up: KeyCode::W.into(),
+                down: KeyCode::S.into(),
+                left: KeyCode::A.into(),
+                right: KeyCode::D.into(),
+            },
+            PlayerAction::Move,
+        )
+        .insert(KeyCode::Space, PlayerAction::Jump);
     commands
         .spawn_bundle(SpriteSheetBundle {
             sprite: TextureAtlasSprite {
@@ -64,15 +66,13 @@ fn spawn_player(
             ..default()
         })
         .insert(RigidBody::Dynamic)
-        .insert(RotationConstraints::lock())
-        .insert(CollisionShape::Capsule {
-            half_segment: 8.,
-            radius: 8.,
-        })
+        .insert(LockedAxes::ROTATION_LOCKED)
+        .insert(Collider::capsule_y(8., 8.))
+        .insert(ColliderMassProperties::Mass(80.0))
         .insert(Facing::Right)
         .insert(animation)
         .insert(Player)
-        .insert(Velocity::from_linear(vec3(0., 0., 0.)))
+        .insert(Velocity::linear(vec2(0., 0.)))
         .insert_bundle(InputManagerBundle::<PlayerAction> {
             action_state: ActionState::default(),
             input_map,
@@ -86,7 +86,10 @@ fn move_player(mut player_query: Query<(&mut Velocity, &ActionState<PlayerAction
         let axis_pair = action_state
             .axis_pair(PlayerAction::Move)
             .unwrap_or_default();
-        velocity.linear = vec3(axis_pair.x(), axis_pair.y(), 0.) * speed;
+        velocity.linvel.x = axis_pair.x() * speed;
+        if action_state.just_pressed(PlayerAction::Jump) {
+            velocity.linvel.y = 150.;
+        };
     }
 }
 

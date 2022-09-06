@@ -2,14 +2,13 @@ use bevy::{
     math::{vec2, vec3},
     prelude::*,
 };
-use heron::{CollisionShape, Gravity, PhysicMaterial, RigidBody};
+use bevy_rapier2d::prelude::*;
 
 pub struct PlatformsPlugin;
 
 impl Plugin for PlatformsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(create_platforms)
-            .insert_resource(Gravity::from(vec3(0., -4000., 0.)));
+        app.add_startup_system(create_platforms);
     }
 }
 
@@ -25,10 +24,6 @@ fn create_platforms(mut commands: Commands) {
             transform: Transform::from_translation(vec3(0., -100., 0.)),
             ..default()
         })
-        .insert(PhysicMaterial::default())
-        .insert(RigidBody::Static)
-        .insert(CollisionShape::Cuboid {
-            half_extends: size.extend(0.) / 2.,
-            border_radius: None,
-        });
+        .insert(RigidBody::Fixed)
+        .insert(Collider::cuboid(size.x / 2., size.y / 2.));
 }
