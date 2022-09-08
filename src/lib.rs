@@ -1,3 +1,4 @@
+use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 #[cfg(debug_assertions)]
 use bevy::diagnostic::LogDiagnosticsPlugin;
 use bevy::math::vec2;
@@ -12,13 +13,15 @@ use animation::AnimationPlugin;
 use loading::LoadingPlugin;
 use platforms::PlatformsPlugin;
 use player::PlayerPlugin;
+use world::WorldPlugin;
 
 mod animation;
 mod atlas_data;
-pub mod components;
+mod components;
 mod loading;
 mod platforms;
 mod player;
+mod world;
 
 // This example game uses States to separate logic
 // See https://bevy-cheatbook.github.io/programming/states.html
@@ -51,6 +54,7 @@ impl Plugin for GamePlugin {
             .add_plugin(LoadingPlugin)
             .add_plugin(PlayerPlugin)
             .add_plugin(PlatformsPlugin)
+            .add_plugin(WorldPlugin)
             .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(
                 PIXELS_PER_METER,
             ))
@@ -63,8 +67,9 @@ impl Plugin for GamePlugin {
 
         #[cfg(debug_assertions)]
         {
-            app.add_plugin(LogDiagnosticsPlugin::default());
-            // .add_plugin(FrameTimeDiagnosticsPlugin::default())
+            app.add_plugin(LogDiagnosticsPlugin::default())
+                // .add_plugin(FrameTimeDiagnosticsPlugin::default())
+                ;
         }
     }
 }
