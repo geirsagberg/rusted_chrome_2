@@ -185,9 +185,9 @@ fn animation_flipping(mut query: Query<(&mut TextureAtlasSprite, &Facing)>) {
 
 fn set_facing(mut query: Query<(&Velocity, &mut Facing)>) {
     for (velocity, mut facing) in query.iter_mut() {
-        if velocity.linvel.x < 0. {
+        if velocity.linvel.x < -0.001 {
             facing.set(Facing::Left);
-        } else if velocity.linvel.x > 0. {
+        } else if velocity.linvel.x > 0.001 {
             facing.set(Facing::Right);
         }
     }

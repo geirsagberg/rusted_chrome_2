@@ -9,7 +9,7 @@ use crate::animation::Animation;
 use crate::atlas_data::AnimationSpriteSheetMeta;
 use crate::components::facing::Facing;
 use crate::loading::TextureAssets;
-use crate::{GameState, PlayerAction};
+use crate::{GameState, PlayerAction, PIXELS_PER_METER};
 
 pub struct PlayerPlugin;
 
@@ -88,7 +88,7 @@ fn move_player(mut player_query: Query<(&mut Velocity, &ActionState<PlayerAction
             .unwrap_or_default();
         velocity.linvel.x = axis_pair.x() * speed;
         if action_state.just_pressed(PlayerAction::Jump) {
-            velocity.linvel.y = 150.;
+            velocity.linvel.y = 6. * PIXELS_PER_METER;
         };
     }
 }

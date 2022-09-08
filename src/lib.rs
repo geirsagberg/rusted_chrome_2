@@ -39,6 +39,8 @@ enum PlayerAction {
     Jump,
 }
 
+const PIXELS_PER_METER: f32 = 32.;
+
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(ClearColor(Color::BLACK))
@@ -49,10 +51,12 @@ impl Plugin for GamePlugin {
             .add_plugin(LoadingPlugin)
             .add_plugin(PlayerPlugin)
             .add_plugin(PlatformsPlugin)
-            .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(16.))
+            .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(
+                PIXELS_PER_METER,
+            ))
             .add_plugin(RapierDebugRenderPlugin::default())
             .insert_resource(RapierConfiguration {
-                gravity: vec2(0., -9.81 * 16.),
+                gravity: vec2(0., -9.81 * PIXELS_PER_METER),
                 ..default()
             })
             .add_plugin(AnimationPlugin);
@@ -67,6 +71,6 @@ impl Plugin for GamePlugin {
 
 fn setup_camera(mut commands: Commands) {
     let mut bundle = Camera2dBundle::default();
-    bundle.projection.scale = 0.5;
+    bundle.projection.scale = 1.;
     commands.spawn_bundle(bundle);
 }
