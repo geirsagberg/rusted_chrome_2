@@ -68,8 +68,7 @@ impl Plugin for GamePlugin {
         #[cfg(debug_assertions)]
         {
             app.add_plugin(LogDiagnosticsPlugin::default())
-                // .add_plugin(FrameTimeDiagnosticsPlugin::default())
-                ;
+                .add_plugin(FrameTimeDiagnosticsPlugin::default());
         }
     }
 }
