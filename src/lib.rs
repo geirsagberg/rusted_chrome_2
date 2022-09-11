@@ -4,8 +4,9 @@ use bevy::diagnostic::LogDiagnosticsPlugin;
 use bevy::math::vec2;
 use bevy::prelude::*;
 use bevy::{app::App, render::texture::ImageSettings};
-use bevy_rapier2d::prelude::{NoUserData, RapierConfiguration, RapierPhysicsPlugin};
+use bevy_rapier2d::prelude::{NoUserData, RapierConfiguration, RapierPhysicsPlugin, TimestepMode};
 use bevy_rapier2d::render::RapierDebugRenderPlugin;
+use fps::FpsPlugin;
 use iyes_loopless::prelude::AppLooplessStateExt;
 use leafwing_input_manager::prelude::*;
 
@@ -18,9 +19,11 @@ use world::WorldPlugin;
 mod animation;
 mod atlas_data;
 mod components;
+mod fps;
 mod loading;
 mod platforms;
 mod player;
+mod screen_diags;
 mod world;
 
 // This example game uses States to separate logic
@@ -50,25 +53,30 @@ impl Plugin for GamePlugin {
             .insert_resource(ImageSettings::default_nearest())
             .add_loopless_state(GameState::Loading)
             .add_startup_system(setup_camera)
-            .add_plugin(InputManagerPlugin::<PlayerAction>::default())
             .add_plugin(LoadingPlugin)
             .add_plugin(PlayerPlugin)
             .add_plugin(PlatformsPlugin)
             .add_plugin(WorldPlugin)
+            .add_plugin(AnimationPlugin)
+            .add_plugin(FpsPlugin)
+            .add_plugin(RapierDebugRenderPlugin::default())
+            .add_plugin(InputManagerPlugin::<PlayerAction>::default())
             .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(
                 PIXELS_PER_METER,
             ))
-            .add_plugin(RapierDebugRenderPlugin::default())
             .insert_resource(RapierConfiguration {
                 gravity: vec2(0., -9.81 * PIXELS_PER_METER),
+                timestep_mode: TimestepMode::Interpolated {
+                    dt: 1. / 60.,
+                    time_scale: 1.0,
+                    substeps: 1,
+                },
                 ..default()
-            })
-            .add_plugin(AnimationPlugin);
+            });
 
         #[cfg(debug_assertions)]
         {
-            app.add_plugin(LogDiagnosticsPlugin::default())
-                .add_plugin(FrameTimeDiagnosticsPlugin::default());
+            app.add_plugin(LogDiagnosticsPlugin::default());
         }
     }
 }

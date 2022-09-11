@@ -33,7 +33,7 @@ anyhow = "1.0.58"
 bevy = "0.8"
 bevy_asset_loader = {version = "0.12", features = ["stageless", "2d"]}
 bevy_framepace = "0.7"
-bevy_rapier2d = {version = "0.16", features = ["simd-stable", "debug-render"]}
+bevy_rapier2d = {version = "0.16", features = ["enhanced-determinism", "debug-render"]}
 iyes_loopless = "0.7"
 leafwing-input-manager = "0.5"
 rand = "0.8.3"
