@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_framepace::{FramepacePlugin, FramepaceSettings, Limiter};
 
-use crate::screen_diags::ScreenDiagsPlugin;
+use crate::{screen_diags::ScreenDiagsPlugin, PHYSICS_FPS};
 
 pub struct FpsPlugin;
 
@@ -10,7 +10,7 @@ impl Plugin for FpsPlugin {
         app.add_plugin(ScreenDiagsPlugin)
             .add_plugin(FramepacePlugin)
             .insert_resource(FramepaceSettings {
-                limiter: Limiter::Off,
+                limiter: Limiter::from_framerate(PHYSICS_FPS as f64),
                 ..Default::default()
             })
             .insert_resource(FpsSettings::default())

@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_rapier2d::{na::Isometry2, prelude::Collider};
+use bevy_rapier2d::prelude::*;
 
 pub struct WorldPlugin;
 
@@ -22,11 +22,13 @@ pub struct ClampToWorld;
 
 impl Plugin for WorldPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(World::default())
-        .add_system(wrap_around_world)
-            // .add_system(clamp_to_world)
-            ;
+        app.insert_resource(World::default());
     }
+}
+
+pub fn get_world_rollback_systems() -> SystemSet {
+    SystemSet::new().with_system(wrap_around_world)
+    // .with_system(clamp_to_world)
 }
 
 fn wrap_around_world(mut query: Query<(&mut Transform, &Collider)>, world: Res<World>) {

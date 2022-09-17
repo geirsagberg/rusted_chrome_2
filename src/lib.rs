@@ -7,7 +7,8 @@ use bevy::prelude::*;
 use bevy::{app::App, render::texture::ImageSettings};
 use bevy_ggrs::GGRSPlugin;
 use bevy_rapier2d::prelude::{
-    NoUserData, RapierConfiguration, RapierPhysicsPlugin, TimestepMode, Velocity,
+    AdditionalMassProperties, ExternalForce, ExternalImpulse, GravityScale, NoUserData,
+    PhysicsStages, RapierConfiguration, RapierPhysicsPlugin, TimestepMode, Velocity,
 };
 use bevy_rapier2d::render::RapierDebugRenderPlugin;
 use fps::FpsPlugin;
@@ -18,8 +19,8 @@ use leafwing_input_manager::prelude::*;
 use animation::AnimationPlugin;
 use loading::LoadingPlugin;
 use platforms::PlatformsPlugin;
-use player::{Player, PlayerPlugin};
-use world::WorldPlugin;
+use player::{get_player_rollback_systems, Player, PlayerPlugin};
+use world::{get_world_rollback_systems, WorldPlugin};
 
 mod animation;
 mod atlas_data;
@@ -69,16 +70,21 @@ impl Plugin for GamePlugin {
             .add_plugin(RollbackPlugin)
             .add_plugin(RapierDebugRenderPlugin::default())
             .add_plugin(InputManagerPlugin::<PlayerAction>::default())
-            .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(
-                PIXELS_PER_METER,
-            ))
+            .add_plugin(
+                RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(PIXELS_PER_METER)
+                    .with_default_system_setup(false),
+            )
             .insert_resource(RapierConfiguration {
                 gravity: vec2(0., -9.81 * PIXELS_PER_METER),
-                timestep_mode: TimestepMode::Interpolated {
+                timestep_mode: TimestepMode::Fixed {
                     dt: 1. / PHYSICS_FPS as f32,
-                    time_scale: 1.0,
                     substeps: 1,
                 },
+                // timestep_mode: TimestepMode::Interpolated {
+                //     dt: 1. / PHYSICS_FPS as f32,
+                //     time_scale: 1.0,
+                //     substeps: 1,
+                // },
                 ..default()
             });
 
@@ -111,7 +117,7 @@ pub struct InputBits {
     pub input: u8,
 }
 
-const ROLLBACK_DEFAULT: &str = "rollback_default";
+const ROLLBACK_UPDATE: &str = "rollback_update";
 
 impl Plugin for RollbackPlugin {
     fn build(&self, app: &mut App) {
@@ -122,9 +128,43 @@ impl Plugin for RollbackPlugin {
             .with_input_system(map_player_input)
             .register_rollback_type::<Transform>()
             .register_rollback_type::<Velocity>()
+            .register_rollback_type::<AdditionalMassProperties>()
+            .register_rollback_type::<ExternalForce>()
+            .register_rollback_type::<ExternalImpulse>()
+            .register_rollback_type::<GravityScale>()
             // these systems will be executed as part of the advance frame update
             .with_rollback_schedule(
-                Schedule::default().with_stage(ROLLBACK_DEFAULT, SystemStage::parallel()),
+                Schedule::default()
+                    .with_stage(
+                        ROLLBACK_UPDATE,
+                        SystemStage::parallel()
+                            .with_system_set(get_player_rollback_systems())
+                            .with_system_set(get_world_rollback_systems()),
+                    )
+                    .with_stage(
+                        PhysicsStages::SyncBackend,
+                        SystemStage::parallel().with_system_set(
+                            RapierPhysicsPlugin::<NoUserData>::get_systems(
+                                PhysicsStages::SyncBackend,
+                            ),
+                        ),
+                    )
+                    .with_stage(
+                        PhysicsStages::StepSimulation,
+                        SystemStage::parallel().with_system_set(
+                            RapierPhysicsPlugin::<NoUserData>::get_systems(
+                                PhysicsStages::StepSimulation,
+                            ),
+                        ),
+                    )
+                    .with_stage(
+                        PhysicsStages::Writeback,
+                        SystemStage::parallel().with_system_set(
+                            RapierPhysicsPlugin::<NoUserData>::get_systems(
+                                PhysicsStages::Writeback,
+                            ),
+                        ),
+                    ),
             )
             .build(app);
     }

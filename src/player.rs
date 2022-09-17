@@ -1,9 +1,9 @@
 use bevy::math::vec2;
 use bevy::prelude::*;
 use bevy::sprite::Anchor;
-use bevy_ggrs::{Rollback, RollbackIdProvider};
+use bevy_ggrs::{Rollback, RollbackIdProvider, SessionType};
 use bevy_rapier2d::prelude::*;
-use ggrs::PlayerHandle;
+use ggrs::{PlayerHandle, PlayerType, SessionBuilder};
 use iyes_loopless::prelude::*;
 use leafwing_input_manager::prelude::*;
 
@@ -11,7 +11,7 @@ use crate::animation::Animation;
 use crate::atlas_data::AnimationSpriteSheetMeta;
 use crate::components::facing::Facing;
 use crate::loading::TextureAssets;
-use crate::{GameState, PlayerAction, PIXELS_PER_METER};
+use crate::{GGRSConfig, GameState, PlayerAction, PHYSICS_FPS, PIXELS_PER_METER};
 
 pub struct PlayerPlugin;
 
@@ -26,16 +26,33 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_enter_system_set(
             GameState::Playing,
-            SystemSet::new().with_system(spawn_player),
-        )
-        .add_system_set(
-            ConditionSet::new()
-                .run_in_state(GameState::Playing)
-                .with_system(move_player)
-                .with_system(animate_player)
-                .into(),
+            SystemSet::new()
+                .with_system(spawn_player)
+                .with_system(start_session),
         );
     }
+}
+
+pub fn get_player_rollback_systems() -> SystemSet {
+    ConditionSet::new()
+        .run_in_state(GameState::Playing)
+        .with_system(move_player)
+        .with_system(animate_player)
+        .into()
+}
+
+fn start_session(mut commands: Commands) {
+    let session = SessionBuilder::<GGRSConfig>::new()
+        .with_num_players(1)
+        .with_fps(PHYSICS_FPS)
+        .expect("Invalid FPS")
+        .add_player(PlayerType::Local, 0)
+        .expect("Could not add local player")
+        .start_synctest_session()
+        .expect("");
+
+    commands.insert_resource(session);
+    commands.insert_resource(SessionType::SyncTestSession);
 }
 
 fn spawn_player(
