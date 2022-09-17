@@ -1,7 +1,9 @@
 use bevy::math::vec2;
 use bevy::prelude::*;
 use bevy::sprite::Anchor;
+use bevy_ggrs::{Rollback, RollbackIdProvider};
 use bevy_rapier2d::prelude::*;
+use ggrs::PlayerHandle;
 use iyes_loopless::prelude::*;
 use leafwing_input_manager::prelude::*;
 
@@ -13,8 +15,10 @@ use crate::{GameState, PlayerAction, PIXELS_PER_METER};
 
 pub struct PlayerPlugin;
 
-#[derive(Component)]
-pub struct Player;
+#[derive(Component, Default)]
+pub struct Player {
+    pub handle: PlayerHandle,
+}
 
 /// This plugin handles player related stuff like movement
 /// Player logic is only active during the State `GameState::Playing`
@@ -38,6 +42,7 @@ fn spawn_player(
     mut commands: Commands,
     textures: Res<TextureAssets>,
     animated_sprite_sheet_assets: Res<Assets<AnimationSpriteSheetMeta>>,
+    mut rollback_id_provider: ResMut<RollbackIdProvider>,
 ) {
     let cyborg = animated_sprite_sheet_assets.get(&textures.cyborg).unwrap();
     let mut animation = Animation::new(cyborg.animation_frame_duration, cyborg.animations.clone());
@@ -65,13 +70,14 @@ fn spawn_player(
             transform: Transform::from_xyz(0., 0., 1.),
             ..default()
         })
+        .insert(Rollback::new(rollback_id_provider.next_id()))
         .insert(RigidBody::Dynamic)
         .insert(LockedAxes::ROTATION_LOCKED)
         .insert(Collider::capsule_y(8., 8.))
         .insert(ColliderMassProperties::Mass(80.0))
         .insert(Facing::Right)
         .insert(animation)
-        .insert(Player)
+        .insert(Player::default())
         .insert(Velocity::linear(vec2(0., 0.)))
         .insert_bundle(InputManagerBundle::<PlayerAction> {
             action_state: ActionState::default(),
