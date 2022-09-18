@@ -14,9 +14,11 @@ use bevy_rapier2d::render::RapierDebugRenderPlugin;
 use fps::FpsPlugin;
 use ggrs::{Config, PlayerHandle};
 use iyes_loopless::prelude::AppLooplessStateExt;
+use leafwing_input_manager::plugin::InputManagerSystem;
 use leafwing_input_manager::prelude::*;
 
 use animation::AnimationPlugin;
+use leafwing_input_manager::systems::{release_on_disable, tick_action_state, update_action_state};
 use loading::LoadingPlugin;
 use platforms::PlatformsPlugin;
 use player::{get_player_rollback_systems, Player, PlayerPlugin};
@@ -69,7 +71,6 @@ impl Plugin for GamePlugin {
             .add_plugin(FpsPlugin)
             .add_plugin(RollbackPlugin)
             .add_plugin(RapierDebugRenderPlugin::default())
-            .add_plugin(InputManagerPlugin::<PlayerAction>::default())
             .add_plugin(
                 RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(PIXELS_PER_METER)
                     .with_default_system_setup(false),
@@ -80,13 +81,10 @@ impl Plugin for GamePlugin {
                     dt: 1. / PHYSICS_FPS as f32,
                     substeps: 1,
                 },
-                // timestep_mode: TimestepMode::Interpolated {
-                //     dt: 1. / PHYSICS_FPS as f32,
-                //     time_scale: 1.0,
-                //     substeps: 1,
-                // },
                 ..default()
-            });
+            })
+            .init_resource::<ToggleActions<PlayerAction>>()
+            .init_resource::<ClashStrategy>();
 
         #[cfg(debug_assertions)]
         {
@@ -117,7 +115,26 @@ pub struct InputBits {
     pub input: u8,
 }
 
-const ROLLBACK_UPDATE: &str = "rollback_update";
+#[derive(Debug, Hash, PartialEq, Eq, Clone, StageLabel)]
+enum RollbackStage {
+    PreUpdate,
+    Update,
+}
+
+fn get_input_manager_systems() -> SystemSet {
+    SystemSet::new()
+        .with_system(
+            tick_action_state::<PlayerAction>
+                .label(InputManagerSystem::Tick)
+                .before(InputManagerSystem::Update),
+        )
+        .with_system(update_action_state::<PlayerAction>.label(InputManagerSystem::Update))
+        .with_system(
+            release_on_disable::<PlayerAction>
+                .label(InputManagerSystem::ReleaseOnDisable)
+                .after(InputManagerSystem::Update),
+        )
+}
 
 impl Plugin for RollbackPlugin {
     fn build(&self, app: &mut App) {
@@ -136,7 +153,11 @@ impl Plugin for RollbackPlugin {
             .with_rollback_schedule(
                 Schedule::default()
                     .with_stage(
-                        ROLLBACK_UPDATE,
+                        RollbackStage::PreUpdate,
+                        SystemStage::parallel().with_system_set(get_input_manager_systems()),
+                    )
+                    .with_stage(
+                        RollbackStage::Update,
                         SystemStage::parallel()
                             .with_system_set(get_player_rollback_systems())
                             .with_system_set(get_world_rollback_systems()),
