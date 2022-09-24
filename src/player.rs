@@ -87,6 +87,13 @@ fn spawn_player(
             transform: Transform::from_xyz(0., 0., 1.),
             ..default()
         })
+        .with_children(|parent| {
+            parent.spawn_bundle(SpriteBundle {
+                texture: textures.hand.clone(),
+                transform: Transform::from_xyz(0., 4., -0.1),
+                ..default()
+            });
+        })
         .insert(Rollback::new(rollback_id_provider.next_id()))
         .insert(RigidBody::Dynamic)
         .insert(LockedAxes::ROTATION_LOCKED)
@@ -102,13 +109,22 @@ fn spawn_player(
         });
 }
 
-fn move_player(mut player_query: Query<(&mut Velocity, &ActionState<PlayerAction>), With<Player>>) {
+fn move_player(
+    mut player_query: Query<(&mut Velocity, &ActionState<PlayerAction>, &mut Facing), With<Player>>,
+) {
     let speed = 150.;
 
-    for (mut velocity, action_state) in player_query.iter_mut() {
+    for (mut velocity, action_state, mut facing) in &mut player_query {
         let axis_pair = action_state
             .axis_pair(PlayerAction::Move)
             .unwrap_or_default();
+
+        if axis_pair.x() > 0.1 {
+            facing.set(Facing::Right);
+        } else if axis_pair.x() < -0.1 {
+            facing.set(Facing::Left);
+        }
+
         velocity.linvel.x = axis_pair.x() * speed;
         if action_state.just_pressed(PlayerAction::Jump) {
             velocity.linvel.y = 6. * PIXELS_PER_METER;

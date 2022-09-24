@@ -7,7 +7,6 @@ use crate::GameState;
 
 pub struct LoadingPlugin;
 
-
 /// This plugin loads all assets using [AssetLoader] from a third party bevy plugin
 /// Alternatively you can write the logic to load assets yourself
 /// If interested, take a look at https://bevy-cheatbook.github.io/features/assets.html
@@ -46,4 +45,6 @@ pub struct AudioAssets {
 pub struct TextureAssets {
     #[asset(path = "textures/cyborg.yml")]
     pub cyborg: Handle<AnimationSpriteSheetMeta>,
+    #[asset(path = "textures/hand.png")]
+    pub hand: Handle<Image>,
 }

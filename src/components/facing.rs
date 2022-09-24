@@ -1,7 +1,7 @@
 use bevy::prelude::Component;
 
 #[cfg_attr(feature = "debug", derive(bevy_inspector_egui::Inspectable))]
-#[derive(Component, PartialEq, Eq, Clone)]
+#[derive(Component, PartialEq, Eq, Clone, Debug)]
 pub enum Facing {
     Left,
     Right,

@@ -1,0 +1,1 @@
+cargo watch -cx "run --release"

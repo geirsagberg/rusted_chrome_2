@@ -1,23 +1,20 @@
 use std::ops::Range;
 
 use bevy::{prelude::*, sprite::TextureAtlasSprite, utils::HashMap};
-use bevy_rapier2d::prelude::Velocity;
 use iyes_loopless::condition::ConditionSet;
 use serde::de::SeqAccess;
 use serde::Deserializer;
 
-use crate::{components::facing::Facing, CoreStage, GameState};
+use crate::{CoreStage, GameState};
 
 pub struct AnimationPlugin;
 
 impl Plugin for AnimationPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(set_facing);
         app.add_system_set_to_stage(
             CoreStage::Last,
             ConditionSet::new()
                 .run_in_state(GameState::Playing)
-                .with_system(animation_flipping)
                 .with_system(animation_cycling)
                 .into(),
         );
@@ -173,22 +170,6 @@ fn animation_cycling(mut query: Query<(&mut TextureAtlasSprite, &mut Animation)>
 
         if let Some(index) = animation.get_current_index() {
             texture_atlas_sprite.index = index;
-        }
-    }
-}
-
-fn animation_flipping(mut query: Query<(&mut TextureAtlasSprite, &Facing)>) {
-    for (mut texture_atlas_sprite, facing) in query.iter_mut() {
-        texture_atlas_sprite.flip_x = facing.is_left();
-    }
-}
-
-fn set_facing(mut query: Query<(&Velocity, &mut Facing)>) {
-    for (velocity, mut facing) in query.iter_mut() {
-        if velocity.linvel.x < -0.001 {
-            facing.set(Facing::Left);
-        } else if velocity.linvel.x > 0.001 {
-            facing.set(Facing::Right);
         }
     }
 }

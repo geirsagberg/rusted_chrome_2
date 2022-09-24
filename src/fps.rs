@@ -1,7 +1,10 @@
 use bevy::prelude::*;
 use bevy_framepace::{FramepacePlugin, FramepaceSettings, Limiter};
 
-use crate::{screen_diags::ScreenDiagsPlugin, PHYSICS_FPS};
+use crate::{
+    screen_diags::{ScreenDiagsPlugin, ScreenDiagsState},
+    PHYSICS_FPS,
+};
 
 pub struct FpsPlugin;
 
@@ -14,7 +17,8 @@ impl Plugin for FpsPlugin {
                 ..Default::default()
             })
             .insert_resource(FpsSettings::default())
-            .add_system(toggle_framepace_plugin);
+            .add_system(toggle_framepace_plugin)
+            .add_system(toggle_fps);
     }
 }
 
@@ -25,6 +29,16 @@ struct FpsSettings {
 impl Default for FpsSettings {
     fn default() -> Self {
         Self { fps: 60 }
+    }
+}
+
+fn toggle_fps(mut screen_diags_state: ResMut<ScreenDiagsState>, input: Res<Input<KeyCode>>) {
+    if input.pressed(KeyCode::LControl) && input.just_pressed(KeyCode::F) {
+        if screen_diags_state.enabled() {
+            screen_diags_state.disable();
+        } else {
+            screen_diags_state.enable();
+        }
     }
 }
 

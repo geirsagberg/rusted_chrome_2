@@ -11,6 +11,8 @@ use bevy_rapier2d::prelude::{
     PhysicsStages, RapierConfiguration, RapierPhysicsPlugin, TimestepMode, Velocity,
 };
 use bevy_rapier2d::render::RapierDebugRenderPlugin;
+use components::facing::Facing;
+use debug::DebugPlugin;
 use fps::FpsPlugin;
 use ggrs::{Config, PlayerHandle};
 use iyes_loopless::prelude::AppLooplessStateExt;
@@ -27,6 +29,7 @@ use world::{get_world_rollback_systems, WorldPlugin};
 mod animation;
 mod atlas_data;
 mod components;
+mod debug;
 mod fps;
 mod loading;
 mod platforms;
@@ -59,7 +62,7 @@ const PHYSICS_FPS: usize = 60;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(ClearColor(Color::BLACK))
+        app.insert_resource(ClearColor(Color::GRAY))
             .insert_resource(ImageSettings::default_nearest())
             .add_loopless_state(GameState::Loading)
             .add_startup_system(setup_camera)
@@ -71,6 +74,7 @@ impl Plugin for GamePlugin {
             .add_plugin(FpsPlugin)
             .add_plugin(RollbackPlugin)
             .add_plugin(RapierDebugRenderPlugin::default())
+            .add_plugin(DebugPlugin)
             .add_plugin(
                 RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(PIXELS_PER_METER)
                     .with_default_system_setup(false),
@@ -83,6 +87,7 @@ impl Plugin for GamePlugin {
                 },
                 ..default()
             })
+            .add_system(flip_facing)
             .init_resource::<ToggleActions<PlayerAction>>()
             .init_resource::<ClashStrategy>();
 
@@ -93,9 +98,15 @@ impl Plugin for GamePlugin {
     }
 }
 
+fn flip_facing(mut query: Query<(&mut Transform, &Facing)>) {
+    for (mut transform, facing) in &mut query {
+        transform.scale.x = if facing.is_left() { -1. } else { 1. };
+    }
+}
+
 fn setup_camera(mut commands: Commands) {
     let mut bundle = Camera2dBundle::default();
-    bundle.projection.scale = 1.;
+    bundle.projection.scale = 0.5;
     commands.spawn_bundle(bundle);
 }
 
