@@ -6,6 +6,7 @@ use bevy::math::vec2;
 use bevy::prelude::*;
 use bevy::{app::App, render::texture::ImageSettings};
 use bevy_ggrs::GGRSPlugin;
+use bevy_prototype_lyon::prelude::ShapePlugin;
 use bevy_rapier2d::prelude::{
     AdditionalMassProperties, ExternalForce, ExternalImpulse, GravityScale, NoUserData,
     PhysicsStages, RapierConfiguration, RapierPhysicsPlugin, TimestepMode, Velocity,
@@ -53,6 +54,7 @@ pub struct GamePlugin;
 #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug)]
 enum PlayerAction {
     Move,
+    Aim,
     Jump,
 }
 
@@ -71,6 +73,7 @@ impl Plugin for GamePlugin {
             .add_plugin(PlatformsPlugin)
             .add_plugin(WorldPlugin)
             .add_plugin(AnimationPlugin)
+            .add_plugin(ShapePlugin)
             .add_plugin(FpsPlugin)
             .add_plugin(RollbackPlugin)
             .add_plugin(RapierDebugRenderPlugin::default())
