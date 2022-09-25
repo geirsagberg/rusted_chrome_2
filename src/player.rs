@@ -2,6 +2,7 @@ use bevy::math::vec2;
 use bevy::prelude::*;
 use bevy::sprite::Anchor;
 use bevy_ggrs::{Rollback, RollbackIdProvider, SessionType};
+use bevy_prototype_debug_lines::DebugLines;
 use bevy_rapier2d::prelude::*;
 use ggrs::{PlayerHandle, PlayerType, SessionBuilder};
 use iyes_loopless::prelude::*;
@@ -19,6 +20,17 @@ pub struct PlayerPlugin;
 #[derive(Component, Default)]
 pub struct Player {
     pub handle: PlayerHandle,
+}
+
+#[derive(Component)]
+pub struct Standing {
+    pub is_standing: bool,
+}
+
+impl Default for Standing {
+    fn default() -> Self {
+        Self { is_standing: false }
+    }
 }
 
 /// This plugin handles player related stuff like movement
@@ -41,6 +53,7 @@ pub fn get_player_rollback_systems() -> SystemSet {
         .with_system(animate_player)
         .with_system(change_aim)
         .with_system(rotate_aim_children)
+        .with_system(check_if_standing)
         .into()
 }
 
@@ -56,6 +69,30 @@ fn start_session(mut commands: Commands) {
 
     commands.insert_resource(session);
     commands.insert_resource(SessionType::SyncTestSession);
+}
+
+fn check_if_standing(
+    mut query: Query<(&Transform, &Collider, &mut Standing)>,
+    rapier_context: Res<RapierContext>,
+) {
+    for (transform, collider, mut standing) in &mut query {
+        let position = transform.translation;
+        let filter = QueryFilter::only_fixed();
+
+        let distance_down = collider.raw.compute_local_aabb().half_extents().y + 1.;
+
+        if let Some((_, _)) = rapier_context.cast_ray(
+            position.truncate(),
+            -transform.local_y().truncate(),
+            distance_down,
+            true,
+            filter,
+        ) {
+            standing.is_standing = true;
+        } else {
+            standing.is_standing = false;
+        }
+    }
 }
 
 fn spawn_player(
@@ -98,6 +135,7 @@ fn spawn_player(
         .insert(ColliderMassProperties::Mass(80.0))
         .insert(Facing::Right)
         .insert(Aiming::default())
+        .insert(Standing::default())
         .insert(animation)
         .insert(Player::default())
         .insert(Velocity::linear(vec2(0., 0.)))
@@ -108,11 +146,19 @@ fn spawn_player(
 }
 
 fn move_player(
-    mut query: Query<(&mut Velocity, &ActionState<PlayerAction>, &mut Facing), With<Player>>,
+    mut query: Query<
+        (
+            &mut Velocity,
+            &ActionState<PlayerAction>,
+            &mut Facing,
+            &Standing,
+        ),
+        With<Player>,
+    >,
 ) {
     let speed = 150.;
 
-    for (mut velocity, action_state, mut facing) in &mut query {
+    for (mut velocity, action_state, mut facing, standing) in &mut query {
         let axis_pair = action_state
             .axis_pair(PlayerAction::Move)
             .unwrap_or_default();
@@ -124,7 +170,8 @@ fn move_player(
         }
 
         velocity.linvel.x = axis_pair.x() * speed;
-        if action_state.just_pressed(PlayerAction::Jump) {
+
+        if action_state.just_pressed(PlayerAction::Jump) && standing.is_standing {
             velocity.linvel.y = 6. * PIXELS_PER_METER;
         };
     }
@@ -156,18 +203,26 @@ fn rotate_aim_children(
     }
 }
 
-fn animate_player(mut query: Query<(&mut Animation, &ActionState<PlayerAction>), With<Player>>) {
-    for (mut animation, action_state) in &mut query {
-        if action_state
-            .axis_pair(PlayerAction::Move)
-            .unwrap_or_default()
-            .x()
-            != 0.
-            && animation.current_animation != Some(String::from("running"))
-        {
-            animation.play("running", true)
-        } else if action_state.just_released(PlayerAction::Move) {
-            animation.play("idle", true)
+fn animate_player(
+    mut query: Query<(&mut Animation, &ActionState<PlayerAction>, &Standing), With<Player>>,
+) {
+    for (mut animation, action_state, standing) in &mut query {
+        if standing.is_standing {
+            if action_state
+                .axis_pair(PlayerAction::Move)
+                .unwrap_or_default()
+                .x()
+                != 0.
+                && animation.current_animation != Some(String::from("running"))
+            {
+                animation.play("running", true)
+            } else if action_state.just_released(PlayerAction::Move)
+                || animation.current_animation == Some(String::from("jumping"))
+            {
+                animation.play("idle", true)
+            }
+        } else if animation.current_animation != Some(String::from("jumping")) {
+            animation.play("jumping", false)
         }
     }
 }

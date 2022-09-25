@@ -35,6 +35,8 @@ bevy_asset_loader = {version = "0.12", features = ["stageless", "2d"]}
 bevy_framepace = "0.7"
 bevy_rapier2d = {version = "0.16", features = ["enhanced-determinism", "debug-render"]}
 bevy_prototype_lyon = "0.6"
+bevy_prototype_debug_lines = "0.8"
+bevy_pixel_camera = "0.2"
 iyes_loopless = "0.7"
 leafwing-input-manager = "0.5"
 rand = "0.8.3"

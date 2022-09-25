@@ -73,7 +73,7 @@ impl AssetLoader for AnimationSpriteSheetLoader {
                     meta.columns,
                     meta.rows,
                 ))
-                    .with_dependency(image_path),
+                .with_dependency(image_path),
             );
             meta.atlas_handle = atlas_handle;
             load_context.set_default_asset(LoadedAsset::new(meta));

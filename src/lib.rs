@@ -6,6 +6,8 @@ use bevy::math::vec2;
 use bevy::prelude::*;
 use bevy::{app::App, render::texture::ImageSettings};
 use bevy_ggrs::GGRSPlugin;
+use bevy_pixel_camera::{PixelCameraBundle, PixelCameraPlugin};
+use bevy_prototype_debug_lines::DebugLinesPlugin;
 use bevy_prototype_lyon::prelude::ShapePlugin;
 use bevy_rapier2d::prelude::{
     AdditionalMassProperties, ExternalForce, ExternalImpulse, GravityScale, NoUserData,
@@ -71,11 +73,13 @@ impl Plugin for GamePlugin {
             .add_plugin(LoadingPlugin)
             .add_plugin(PlayerPlugin)
             .add_plugin(PlatformsPlugin)
+            .add_plugin(PixelCameraPlugin)
             .add_plugin(WorldPlugin)
             .add_plugin(AnimationPlugin)
             .add_plugin(ShapePlugin)
             .add_plugin(FpsPlugin)
             .add_plugin(RollbackPlugin)
+            .add_plugin(DebugLinesPlugin::default())
             .add_plugin(RapierDebugRenderPlugin::default())
             .add_plugin(DebugPlugin)
             .add_plugin(
@@ -108,9 +112,10 @@ fn flip_facing(mut query: Query<(&mut Transform, &Facing)>) {
 }
 
 fn setup_camera(mut commands: Commands) {
-    let mut bundle = Camera2dBundle::default();
-    bundle.projection.scale = 0.5;
-    commands.spawn_bundle(bundle);
+    // let mut bundle = Camera2dBundle::default();
+    // bundle.projection.scale = 0.5;
+    // commands.spawn_bundle(bundle);
+    commands.spawn_bundle(PixelCameraBundle::from_resolution(400, 300));
 }
 
 struct RollbackPlugin;
