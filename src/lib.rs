@@ -14,6 +14,7 @@ use bevy_rapier2d::prelude::{
     PhysicsStages, RapierConfiguration, RapierPhysicsPlugin, TimestepMode, Velocity,
 };
 use bevy_rapier2d::render::RapierDebugRenderPlugin;
+use camera::CameraPlugin;
 use components::facing::Facing;
 use debug::DebugPlugin;
 use fps::FpsPlugin;
@@ -31,6 +32,7 @@ use world::{get_world_rollback_systems, WorldPlugin};
 
 mod animation;
 mod atlas_data;
+mod camera;
 mod components;
 mod debug;
 mod fps;
@@ -68,13 +70,12 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(ClearColor(Color::GRAY))
             .add_loopless_state(GameState::Loading)
-            .add_startup_system(setup_camera)
             .add_plugin(LoadingPlugin)
             .add_plugin(PlayerPlugin)
             .add_plugin(PlatformsPlugin)
-            .add_plugin(PixelCameraPlugin)
             .add_plugin(WorldPlugin)
             .add_plugin(AnimationPlugin)
+            .add_plugin(CameraPlugin)
             .add_plugin(ShapePlugin)
             .add_plugin(FpsPlugin)
             .add_plugin(RollbackPlugin)
@@ -108,10 +109,6 @@ fn flip_facing(mut query: Query<(&mut Transform, &Facing)>) {
     for (mut transform, facing) in &mut query {
         transform.scale.x = if facing.is_left() { -1. } else { 1. };
     }
-}
-
-fn setup_camera(mut commands: Commands) {
-    commands.spawn_bundle(PixelCameraBundle::from_resolution(640, 480));
 }
 
 struct RollbackPlugin;

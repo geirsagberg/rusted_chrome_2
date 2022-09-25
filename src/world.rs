@@ -6,7 +6,7 @@ use crate::{loading::TextureAssets, GameState};
 
 pub struct WorldPlugin;
 
-pub struct World {
+pub struct GameWorld {
     pub width: f32,
     pub height: f32,
 }
@@ -14,7 +14,7 @@ pub struct World {
 const WORLD_WIDTH: f32 = 960.;
 const WORLD_HEIGHT: f32 = 540.;
 
-impl Default for World {
+impl Default for GameWorld {
     fn default() -> Self {
         Self {
             width: WORLD_WIDTH,
@@ -28,10 +28,11 @@ pub struct ClampToWorld;
 
 impl Plugin for WorldPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(World::default()).add_enter_system_set(
-            GameState::Playing,
-            SystemSet::new().with_system(create_world),
-        );
+        app.insert_resource(GameWorld::default())
+            .add_enter_system_set(
+                GameState::Playing,
+                SystemSet::new().with_system(create_world),
+            );
     }
 }
 
@@ -51,7 +52,7 @@ pub fn get_world_rollback_systems() -> SystemSet {
     // .with_system(clamp_to_world)
 }
 
-fn wrap_around_world(mut query: Query<(&mut Transform, &Collider)>, world: Res<World>) {
+fn wrap_around_world(mut query: Query<(&mut Transform, &Collider)>, world: Res<GameWorld>) {
     for (mut transform, collider) in &mut query {
         let position = transform.translation;
         let size = collider.raw.compute_local_aabb().half_extents();

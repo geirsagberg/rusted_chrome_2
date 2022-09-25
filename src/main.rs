@@ -16,6 +16,7 @@ fn main() {
             height: 540.,
             title: "Rusted Chrome".to_string(),
             present_mode: PresentMode::AutoNoVsync,
+            // mode: bevy::window::WindowMode::BorderlessFullscreen,
             resizable: false,
             ..Default::default()
         })

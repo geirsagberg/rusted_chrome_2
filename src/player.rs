@@ -9,6 +9,7 @@ use leafwing_input_manager::prelude::*;
 
 use crate::animation::Animation;
 use crate::atlas_data::AnimationSpriteSheetMeta;
+use crate::camera::CameraTarget;
 use crate::components::aiming::{Aiming, AimingChild};
 use crate::components::facing::Facing;
 use crate::loading::TextureAssets;
@@ -125,7 +126,14 @@ fn spawn_player(
                     transform: Transform::from_xyz(4., 4., -0.1),
                     ..default()
                 })
-                .insert(AimingChild);
+                .insert(AimingChild)
+                .with_children(|parent| {
+                    parent.spawn_bundle(SpriteBundle {
+                        texture: textures.gun.clone(),
+                        transform: Transform::from_xyz(12., 2., 0.05),
+                        ..default()
+                    });
+                });
         })
         .insert(Rollback::new(rollback_id_provider.next_id()))
         .insert(RigidBody::Dynamic)
@@ -133,6 +141,7 @@ fn spawn_player(
         .insert(Collider::capsule_y(8., 8.))
         .insert(ColliderMassProperties::Mass(80.0))
         .insert(Facing::Right)
+        .insert(CameraTarget::with_radius(100.))
         .insert(Aiming::default())
         .insert(Standing::default())
         .insert(animation)
