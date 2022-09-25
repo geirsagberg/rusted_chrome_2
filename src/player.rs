@@ -2,7 +2,6 @@ use bevy::math::vec2;
 use bevy::prelude::*;
 use bevy::sprite::Anchor;
 use bevy_ggrs::{Rollback, RollbackIdProvider, SessionType};
-use bevy_prototype_debug_lines::DebugLines;
 use bevy_rapier2d::prelude::*;
 use ggrs::{PlayerHandle, PlayerType, SessionBuilder};
 use iyes_loopless::prelude::*;
@@ -177,14 +176,16 @@ fn move_player(
     }
 }
 
-fn change_aim(mut query: Query<(&mut Aiming, &ActionState<PlayerAction>)>, time: Res<Time>) {
+const AIMING_SPEED: f32 = 1. / PHYSICS_FPS as f32;
+
+fn change_aim(mut query: Query<(&mut Aiming, &ActionState<PlayerAction>)>) {
     for (mut aiming, action_state) in &mut query {
         let axis_pair = action_state
             .axis_pair(PlayerAction::Move)
             .unwrap_or_default();
 
         if axis_pair.y() > 0.1 || axis_pair.y() < -0.1 {
-            aiming.angle += axis_pair.y() * time.delta_seconds();
+            aiming.angle += axis_pair.y() * AIMING_SPEED;
             aiming.angle = aiming.angle.clamp(aiming.min_angle, aiming.max_angle);
         }
     }

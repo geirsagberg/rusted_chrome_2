@@ -1,10 +1,10 @@
 use bevy::core::{Pod, Zeroable};
 
+use bevy::app::App;
 #[cfg(debug_assertions)]
 use bevy::diagnostic::LogDiagnosticsPlugin;
 use bevy::math::vec2;
 use bevy::prelude::*;
-use bevy::{app::App, render::texture::ImageSettings};
 use bevy_ggrs::GGRSPlugin;
 use bevy_pixel_camera::{PixelCameraBundle, PixelCameraPlugin};
 use bevy_prototype_debug_lines::DebugLinesPlugin;
@@ -67,7 +67,6 @@ const PHYSICS_FPS: usize = 60;
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(ClearColor(Color::GRAY))
-            .insert_resource(ImageSettings::default_nearest())
             .add_loopless_state(GameState::Loading)
             .add_startup_system(setup_camera)
             .add_plugin(LoadingPlugin)
@@ -112,10 +111,7 @@ fn flip_facing(mut query: Query<(&mut Transform, &Facing)>) {
 }
 
 fn setup_camera(mut commands: Commands) {
-    // let mut bundle = Camera2dBundle::default();
-    // bundle.projection.scale = 0.5;
-    // commands.spawn_bundle(bundle);
-    commands.spawn_bundle(PixelCameraBundle::from_resolution(400, 300));
+    commands.spawn_bundle(PixelCameraBundle::from_resolution(640, 480));
 }
 
 struct RollbackPlugin;

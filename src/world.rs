@@ -1,5 +1,8 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
+use iyes_loopless::prelude::AppLooplessStateExt;
+
+use crate::{loading::TextureAssets, GameState};
 
 pub struct WorldPlugin;
 
@@ -8,11 +11,14 @@ pub struct World {
     pub height: f32,
 }
 
+const WORLD_WIDTH: f32 = 960.;
+const WORLD_HEIGHT: f32 = 540.;
+
 impl Default for World {
     fn default() -> Self {
         Self {
-            width: 800.,
-            height: 600.,
+            width: WORLD_WIDTH,
+            height: WORLD_HEIGHT,
         }
     }
 }
@@ -22,8 +28,22 @@ pub struct ClampToWorld;
 
 impl Plugin for WorldPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(World::default());
+        app.insert_resource(World::default()).add_enter_system_set(
+            GameState::Playing,
+            SystemSet::new().with_system(create_world),
+        );
     }
+}
+
+fn create_world(mut commands: Commands, textures: Res<TextureAssets>) {
+    commands.spawn_bundle(SpriteBundle {
+        texture: textures.background.clone(),
+        sprite: Sprite {
+            custom_size: Some(Vec2::new(WORLD_WIDTH, WORLD_HEIGHT)),
+            ..default()
+        },
+        ..default()
+    });
 }
 
 pub fn get_world_rollback_systems() -> SystemSet {

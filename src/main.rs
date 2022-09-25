@@ -4,15 +4,16 @@
 use bevy::prelude::*;
 use bevy::DefaultPlugins;
 
+use bevy::render::texture::ImageSettings;
 use bevy::window::PresentMode;
 use rusted_chrome::GamePlugin;
 
 fn main() {
     App::new()
-        .insert_resource(Msaa { samples: 1 })
+        .insert_resource(ImageSettings::default_nearest())
         .insert_resource(WindowDescriptor {
-            width: 800.,
-            height: 600.,
+            width: 960.,
+            height: 540.,
             title: "Rusted Chrome".to_string(),
             present_mode: PresentMode::AutoNoVsync,
             resizable: false,

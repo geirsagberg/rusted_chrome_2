@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy::render::texture::ImageSettings;
 use bevy_asset_loader::prelude::*;
 
 use crate::atlas_data::{AnimationSpriteSheetLoader, AnimationSpriteSheetMeta};
@@ -12,8 +11,7 @@ pub struct LoadingPlugin;
 /// If interested, take a look at https://bevy-cheatbook.github.io/features/assets.html
 impl Plugin for LoadingPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(ImageSettings::default_nearest())
-            .register_type::<TextureAtlasSprite>()
+        app.register_type::<TextureAtlasSprite>()
             .add_asset::<AnimationSpriteSheetMeta>()
             .add_asset_loader(AnimationSpriteSheetLoader)
             .add_loading_state(
@@ -47,4 +45,6 @@ pub struct TextureAssets {
     pub cyborg: Handle<AnimationSpriteSheetMeta>,
     #[asset(path = "textures/hand.png")]
     pub hand: Handle<Image>,
+    #[asset(path = "textures/background.png")]
+    pub background: Handle<Image>,
 }

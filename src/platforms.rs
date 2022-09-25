@@ -13,7 +13,7 @@ impl Plugin for PlatformsPlugin {
 }
 
 fn create_platforms(mut commands: Commands) {
-    let size = vec2(400., 20.);
+    let size = vec2(800., 20.);
     commands
         .spawn_bundle(SpriteBundle {
             sprite: Sprite {
@@ -21,7 +21,7 @@ fn create_platforms(mut commands: Commands) {
                 custom_size: Some(size),
                 ..default()
             },
-            transform: Transform::from_translation(vec3(0., -100., 0.)),
+            transform: Transform::from_translation(vec3(0., -210., 0.)),
             ..default()
         })
         .insert(RigidBody::Fixed)
