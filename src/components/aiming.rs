@@ -1,8 +1,8 @@
 use std::f32::consts::PI;
 
-use bevy::prelude::Component;
+use bevy::{prelude::Component, reflect::Reflect};
 
-#[derive(Component, PartialEq, Clone, Debug)]
+#[derive(Component, PartialEq, Clone, Debug, Reflect)]
 pub struct Aiming {
     pub angle: f32,
     pub max_angle: f32,

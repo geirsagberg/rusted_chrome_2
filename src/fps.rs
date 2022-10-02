@@ -1,10 +1,7 @@
 use bevy::prelude::*;
 use bevy_framepace::{FramepacePlugin, FramepaceSettings, Limiter};
 
-use crate::{
-    screen_diags::{ScreenDiagsPlugin, ScreenDiagsState},
-    PHYSICS_FPS,
-};
+use crate::{screen_diags::ScreenDiagsPlugin, PHYSICS_FPS};
 
 pub struct FpsPlugin;
 

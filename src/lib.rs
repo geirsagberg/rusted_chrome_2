@@ -6,7 +6,6 @@ use bevy::diagnostic::LogDiagnosticsPlugin;
 use bevy::math::vec2;
 use bevy::prelude::*;
 use bevy_ggrs::GGRSPlugin;
-use bevy_pixel_camera::{PixelCameraBundle, PixelCameraPlugin};
 use bevy_prototype_debug_lines::DebugLinesPlugin;
 use bevy_prototype_lyon::prelude::ShapePlugin;
 use bevy_rapier2d::prelude::{
@@ -15,6 +14,7 @@ use bevy_rapier2d::prelude::{
 };
 use bevy_rapier2d::render::RapierDebugRenderPlugin;
 use camera::CameraPlugin;
+use components::aiming::Aiming;
 use components::facing::Facing;
 use debug::DebugPlugin;
 use fps::FpsPlugin;
@@ -27,7 +27,7 @@ use animation::AnimationPlugin;
 use leafwing_input_manager::systems::{release_on_disable, tick_action_state, update_action_state};
 use loading::LoadingPlugin;
 use platforms::PlatformsPlugin;
-use player::{get_player_rollback_systems, Player, PlayerPlugin};
+use player::{get_player_rollback_systems, Lifetime, Player, PlayerPlugin};
 use world::{get_world_rollback_systems, WorldPlugin};
 
 mod animation;
@@ -162,6 +162,8 @@ impl Plugin for RollbackPlugin {
             .register_rollback_type::<ExternalForce>()
             .register_rollback_type::<ExternalImpulse>()
             .register_rollback_type::<GravityScale>()
+            .register_rollback_type::<Aiming>()
+            .register_rollback_type::<Lifetime>()
             // these systems will be executed as part of the advance frame update
             .with_rollback_schedule(
                 Schedule::default()

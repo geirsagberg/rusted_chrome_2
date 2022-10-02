@@ -27,7 +27,7 @@ pub struct Standing {
     pub is_standing: bool,
 }
 
-#[derive(Component)]
+#[derive(Component, Reflect, Default, PartialEq, Eq, Clone, Copy, Debug)]
 pub struct Lifetime {
     pub frames_left: usize,
 }
@@ -230,7 +230,7 @@ fn shoot(
                 .insert(RigidBody::Dynamic)
                 // .insert(Collider::cuboid(2., 2.))
                 .insert(ColliderMassProperties::Density(1.0))
-                .insert(Lifetime::new(165))
+                .insert(Lifetime::new(60))
                 .insert(GravityScale(0.5))
                 .insert(Velocity::linear(
                     Vec2::from_angle(aiming.angle) * bullet_speed,
@@ -242,14 +242,13 @@ fn shoot(
 fn lifetime_cleanup(mut commands: Commands, mut query: Query<(Entity, &mut Lifetime)>) {
     for (entity, mut lifetime) in &mut query {
         lifetime.frames_left -= 1;
-        println!("lifetime: {}", lifetime.frames_left);
         if (lifetime.frames_left) <= 0 {
             commands.entity(entity).despawn_recursive();
         }
     }
 }
 
-const AIMING_SPEED: f32 = 1. / PHYSICS_FPS as f32;
+const AIMING_SPEED: f32 = 0.05 as f32;
 
 fn change_aim(mut query: Query<(&mut Aiming, &ActionState<PlayerAction>)>) {
     for (mut aiming, action_state) in &mut query {
