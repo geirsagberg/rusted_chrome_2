@@ -13,7 +13,7 @@ use crate::camera::CameraTarget;
 use crate::components::aiming::{Aiming, AimingChild};
 use crate::components::facing::Facing;
 use crate::loading::TextureAssets;
-use crate::{GGRSConfig, GameState, PlayerAction, PHYSICS_FPS, PIXELS_PER_METER};
+use crate::{GGRSConfig, GameState, PlayerAction, PHYSICS_FPS};
 
 pub struct PlayerPlugin;
 
@@ -25,6 +25,20 @@ pub struct Player {
 #[derive(Component)]
 pub struct Standing {
     pub is_standing: bool,
+}
+
+#[derive(Component)]
+pub struct Lifetime {
+    pub frames_left: usize,
+}
+
+#[derive(Component)]
+pub struct Gun;
+
+impl Lifetime {
+    pub fn new(frames_left: usize) -> Self {
+        Self { frames_left }
+    }
 }
 
 impl Default for Standing {
@@ -54,6 +68,8 @@ pub fn get_player_rollback_systems() -> SystemSet {
         .with_system(change_aim)
         .with_system(rotate_aim_children)
         .with_system(check_if_standing)
+        .with_system(shoot)
+        .with_system(lifetime_cleanup)
         .into()
 }
 
@@ -107,6 +123,7 @@ fn spawn_player(
     let mut input_map = InputMap::default();
 
     input_map
+        .insert(KeyCode::E, PlayerAction::Shoot)
         .insert(VirtualDPad::wasd(), PlayerAction::Move)
         .insert(KeyCode::Space, PlayerAction::Jump);
     commands
@@ -128,11 +145,13 @@ fn spawn_player(
                 })
                 .insert(AimingChild)
                 .with_children(|parent| {
-                    parent.spawn_bundle(SpriteBundle {
-                        texture: textures.gun.clone(),
-                        transform: Transform::from_xyz(12., 2., 0.05),
-                        ..default()
-                    });
+                    parent
+                        .spawn_bundle(SpriteBundle {
+                            texture: textures.gun.clone(),
+                            transform: Transform::from_xyz(12., 2., 0.05),
+                            ..default()
+                        })
+                        .insert(Gun);
                 });
         })
         .insert(Rollback::new(rollback_id_provider.next_id()))
@@ -180,8 +199,53 @@ fn move_player(
         velocity.linvel.x = axis_pair.x() * speed;
 
         if action_state.just_pressed(PlayerAction::Jump) && standing.is_standing {
-            velocity.linvel.y = 6. * PIXELS_PER_METER;
+            velocity.linvel.y = 256.;
         };
+    }
+}
+
+fn shoot(
+    mut commands: Commands,
+    query: Query<(&Aiming, &Children, &ActionState<PlayerAction>), With<Player>>,
+    arm_query: Query<&Children, With<AimingChild>>,
+    gun_query: Query<&GlobalTransform, With<Gun>>,
+    textures: Res<TextureAssets>,
+    mut rollback_id_provider: ResMut<RollbackIdProvider>,
+) {
+    let bullet_speed = 200.;
+    for (aiming, children, action_state) in &query {
+        if action_state.just_pressed(PlayerAction::Shoot) {
+            let arm_children = arm_query.get(children[0]).unwrap();
+            let gun_transform = gun_query.get(arm_children[0]).unwrap();
+
+            println!("{:?}", gun_transform.compute_transform().scale.x);
+
+            commands
+                .spawn_bundle(SpriteBundle {
+                    texture: textures.bullet.clone(),
+                    transform: gun_transform.compute_transform(),
+                    ..default()
+                })
+                .insert(Rollback::new(rollback_id_provider.next_id()))
+                .insert(RigidBody::Dynamic)
+                // .insert(Collider::cuboid(2., 2.))
+                .insert(ColliderMassProperties::Density(1.0))
+                .insert(Lifetime::new(165))
+                .insert(GravityScale(0.5))
+                .insert(Velocity::linear(
+                    Vec2::from_angle(aiming.angle) * bullet_speed,
+                ));
+        }
+    }
+}
+
+fn lifetime_cleanup(mut commands: Commands, mut query: Query<(Entity, &mut Lifetime)>) {
+    for (entity, mut lifetime) in &mut query {
+        lifetime.frames_left -= 1;
+        println!("lifetime: {}", lifetime.frames_left);
+        if (lifetime.frames_left) <= 0 {
+            commands.entity(entity).despawn_recursive();
+        }
     }
 }
 

@@ -13,7 +13,7 @@ impl Plugin for PlatformsPlugin {
 }
 
 fn create_platforms(mut commands: Commands) {
-    let size = vec2(800., 20.);
+    let size = vec2(1200., 20.);
     commands
         .spawn_bundle(SpriteBundle {
             sprite: Sprite {

@@ -60,9 +60,10 @@ enum PlayerAction {
     Move,
     Aim,
     Jump,
+    Shoot,
 }
 
-const PIXELS_PER_METER: f32 = 32.;
+const PIXELS_PER_METER: f32 = 64.;
 
 const PHYSICS_FPS: usize = 60;
 

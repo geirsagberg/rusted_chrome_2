@@ -49,4 +49,8 @@ pub struct TextureAssets {
     pub background: Handle<Image>,
     #[asset(path = "textures/gun.png")]
     pub gun: Handle<Image>,
+    #[asset(path = "textures/shoot_effect.yml")]
+    pub shoot_effect: Handle<AnimationSpriteSheetMeta>,
+    #[asset(path = "textures/bullet.png")]
+    pub bullet: Handle<Image>,
 }

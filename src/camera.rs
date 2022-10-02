@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 use bevy_pixel_camera::{PixelCameraBundle, PixelCameraPlugin, PixelProjection};
-use bevy_rapier2d::rapier::prelude::AABB;
 
 pub struct CameraPlugin;
 

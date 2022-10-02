@@ -1,0 +1,8 @@
+image: shoot_effect.png
+tile_size: [48, 16]
+columns: 8
+rows: 1
+animation_frame_duration: 0.12
+animations:
+    shoot:
+        frames: [0, 7]
