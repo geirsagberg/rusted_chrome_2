@@ -45,6 +45,7 @@ serde_yaml = "0.9.2"
 ggrs = "0.9"
 bevy_ggrs = "0.10"
 bytemuck = "1.7"
+extend = "1.1"
 matchbox_socket = { version = "0.3", features = ["ggrs-socket"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]

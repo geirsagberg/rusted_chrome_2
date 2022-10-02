@@ -27,7 +27,7 @@ use animation::AnimationPlugin;
 use leafwing_input_manager::systems::{release_on_disable, tick_action_state, update_action_state};
 use loading::LoadingPlugin;
 use platforms::PlatformsPlugin;
-use player::{get_player_rollback_systems, Lifetime, Player, PlayerPlugin};
+use player::{get_player_rollback_systems, Gun, Lifetime, Player, PlayerPlugin};
 use world::{get_world_rollback_systems, WorldPlugin};
 
 mod animation;
@@ -65,7 +65,11 @@ enum PlayerAction {
 
 const PIXELS_PER_METER: f32 = 64.;
 
+const NORMALIZED_FPS: f32 = 60.;
+
 const PHYSICS_FPS: usize = 60;
+
+const PHYSICS_STEP: f32 = (NORMALIZED_FPS / PHYSICS_FPS as f32) / NORMALIZED_FPS;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
@@ -101,14 +105,18 @@ impl Plugin for GamePlugin {
 
         #[cfg(debug_assertions)]
         {
-            app.add_plugin(LogDiagnosticsPlugin::default());
+            // app.add_plugin(LogDiagnosticsPlugin::default());
         }
     }
 }
 
 fn flip_facing(mut query: Query<(&mut Transform, &Facing)>) {
     for (mut transform, facing) in &mut query {
-        transform.scale.x = if facing.is_left() { -1. } else { 1. };
+        transform.rotation = if facing.is_left() {
+            Quat::from_rotation_y(std::f32::consts::PI)
+        } else {
+            Quat::default()
+        };
     }
 }
 
@@ -164,6 +172,7 @@ impl Plugin for RollbackPlugin {
             .register_rollback_type::<GravityScale>()
             .register_rollback_type::<Aiming>()
             .register_rollback_type::<Lifetime>()
+            .register_rollback_type::<Gun>()
             // these systems will be executed as part of the advance frame update
             .with_rollback_schedule(
                 Schedule::default()

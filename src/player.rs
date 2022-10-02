@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use bevy::math::vec2;
 use bevy::prelude::*;
 use bevy::sprite::Anchor;
@@ -13,7 +15,7 @@ use crate::camera::CameraTarget;
 use crate::components::aiming::{Aiming, AimingChild};
 use crate::components::facing::Facing;
 use crate::loading::TextureAssets;
-use crate::{GGRSConfig, GameState, PlayerAction, PHYSICS_FPS};
+use crate::{GGRSConfig, GameState, PlayerAction, PHYSICS_FPS, PHYSICS_STEP};
 
 pub struct PlayerPlugin;
 
@@ -27,23 +29,39 @@ pub struct Standing {
     pub is_standing: bool,
 }
 
-#[derive(Component, Reflect, Default, PartialEq, Eq, Clone, Copy, Debug)]
+#[derive(Component, Reflect, Default, Clone, Debug)]
 pub struct Lifetime {
-    pub frames_left: usize,
+    pub timer: Timer,
 }
 
-#[derive(Component)]
-pub struct Gun;
+#[derive(Component, Reflect, Default)]
+pub struct Gun {
+    pub shot_timer: Timer,
+}
 
 impl Lifetime {
-    pub fn new(frames_left: usize) -> Self {
-        Self { frames_left }
+    pub fn from_seconds(seconds: f32) -> Self {
+        Self {
+            timer: Timer::from_seconds(seconds, false),
+        }
     }
 }
 
 impl Default for Standing {
     fn default() -> Self {
         Self { is_standing: false }
+    }
+}
+
+#[derive(Copy, Clone)]
+enum CollisionGroup {
+    Default = 1 << 0,
+    Bullet = 1 << 1,
+}
+
+impl CollisionGroup {
+    fn as_bits(self) -> u32 {
+        self as u32
     }
 }
 
@@ -69,6 +87,7 @@ pub fn get_player_rollback_systems() -> SystemSet {
         .with_system(rotate_aim_children)
         .with_system(check_if_standing)
         .with_system(shoot)
+        .with_system(gun_time)
         .with_system(lifetime_cleanup)
         .into()
 }
@@ -143,6 +162,7 @@ fn spawn_player(
                     transform: Transform::from_xyz(4., 4., -0.1),
                     ..default()
                 })
+                .insert(Rollback::new(rollback_id_provider.next_id()))
                 .insert(AimingChild)
                 .with_children(|parent| {
                     parent
@@ -151,7 +171,10 @@ fn spawn_player(
                             transform: Transform::from_xyz(12., 2., 0.05),
                             ..default()
                         })
-                        .insert(Gun);
+                        .insert(Rollback::new(rollback_id_provider.next_id()))
+                        .insert(Gun {
+                            shot_timer: Timer::from_seconds(0.1, false),
+                        });
                 });
         })
         .insert(Rollback::new(rollback_id_provider.next_id()))
@@ -204,51 +227,72 @@ fn move_player(
     }
 }
 
+fn gun_time(mut query: Query<&mut Gun>) {
+    let delta = Duration::from_secs_f32(PHYSICS_STEP);
+
+    for mut gun in &mut query {
+        gun.shot_timer.tick(delta);
+    }
+}
+
 fn shoot(
     mut commands: Commands,
-    query: Query<(&Aiming, &Children, &ActionState<PlayerAction>), With<Player>>,
+    query: Query<(&Children, &Velocity, &ActionState<PlayerAction>), With<Player>>,
     arm_query: Query<&Children, With<AimingChild>>,
-    gun_query: Query<&GlobalTransform, With<Gun>>,
+    mut gun_query: Query<(&GlobalTransform, &mut Gun)>,
     textures: Res<TextureAssets>,
     mut rollback_id_provider: ResMut<RollbackIdProvider>,
 ) {
     let bullet_speed = 200.;
-    for (aiming, children, action_state) in &query {
-        if action_state.just_pressed(PlayerAction::Shoot) {
+    for (children, velocity, action_state) in &query {
+        if action_state.pressed(PlayerAction::Shoot) {
             let arm_children = arm_query.get(children[0]).unwrap();
-            let gun_transform = gun_query.get(arm_children[0]).unwrap();
+            let (gun_transform, mut gun) = gun_query.get_mut(arm_children[0]).unwrap();
 
-            println!("{:?}", gun_transform.compute_transform().scale.x);
+            if gun.shot_timer.finished() {
+                gun.shot_timer.reset();
 
-            commands
-                .spawn_bundle(SpriteBundle {
-                    texture: textures.bullet.clone(),
-                    transform: gun_transform.compute_transform(),
-                    ..default()
-                })
-                .insert(Rollback::new(rollback_id_provider.next_id()))
-                .insert(RigidBody::Dynamic)
-                // .insert(Collider::cuboid(2., 2.))
-                .insert(ColliderMassProperties::Density(1.0))
-                .insert(Lifetime::new(60))
-                .insert(GravityScale(0.5))
-                .insert(Velocity::linear(
-                    Vec2::from_angle(aiming.angle) * bullet_speed,
-                ));
+                let transform = gun_transform
+                    .compute_transform()
+                    .mul_transform(Transform::from_xyz(0., 0., 0.1));
+
+                let forward = transform
+                    .rotation
+                    .mul_vec3(Vec3::new(5., 0., 0.) * transform.scale)
+                    .normalize()
+                    .truncate();
+
+                commands
+                    .spawn_bundle(SpriteBundle {
+                        texture: textures.bullet.clone(),
+                        transform,
+                        ..default()
+                    })
+                    .insert(Rollback::new(rollback_id_provider.next_id()))
+                    .insert(RigidBody::Dynamic)
+                    .insert(Collider::ball(1.))
+                    .insert(CollisionGroups::new(
+                        CollisionGroup::Bullet.as_bits(),
+                        CollisionGroup::Default.as_bits(),
+                    ))
+                    .insert(GravityScale(0.))
+                    .insert(Lifetime::from_seconds(2.0))
+                    .insert(Velocity::linear(forward * bullet_speed + velocity.linvel));
+            }
         }
     }
 }
 
 fn lifetime_cleanup(mut commands: Commands, mut query: Query<(Entity, &mut Lifetime)>) {
     for (entity, mut lifetime) in &mut query {
-        lifetime.frames_left -= 1;
-        if (lifetime.frames_left) <= 0 {
+        lifetime.timer.tick(Duration::from_secs_f32(PHYSICS_STEP));
+        if lifetime.timer.finished() {
             commands.entity(entity).despawn_recursive();
         }
     }
 }
 
-const AIMING_SPEED: f32 = 0.05 as f32;
+const AIMING_SPEED: f32 = 2.;
 
 fn change_aim(mut query: Query<(&mut Aiming, &ActionState<PlayerAction>)>) {
     for (mut aiming, action_state) in &mut query {
@@ -257,7 +301,7 @@ fn change_aim(mut query: Query<(&mut Aiming, &ActionState<PlayerAction>)>) {
             .unwrap_or_default();
 
         if axis_pair.y() > 0.1 || axis_pair.y() < -0.1 {
-            aiming.angle += axis_pair.y() * AIMING_SPEED;
+            aiming.angle += axis_pair.y() * AIMING_SPEED * PHYSICS_STEP;
             aiming.angle = aiming.angle.clamp(aiming.min_angle, aiming.max_angle);
         }
     }
