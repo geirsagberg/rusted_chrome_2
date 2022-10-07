@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 use bevy_pixel_camera::{PixelCameraBundle, PixelCameraPlugin, PixelProjection};
 
+use crate::world::GameWorld;
+
 pub struct CameraPlugin;
 
 #[derive(Component)]
@@ -22,7 +24,7 @@ impl Plugin for CameraPlugin {
     }
 }
 fn setup_camera(mut commands: Commands) {
-    commands.spawn_bundle(PixelCameraBundle::from_zoom(2));
+    commands.spawn_bundle(PixelCameraBundle::from_zoom(1));
 }
 
 fn follow_targets(
@@ -32,6 +34,7 @@ fn follow_targets(
         (With<Camera>, Without<CameraTarget>),
     >,
     time: Res<Time>,
+    game_world: Res<GameWorld>,
 ) {
     let (mut camera, pixel_projection) = camera_query.single_mut();
 
@@ -68,14 +71,20 @@ fn follow_targets(
     if (camera.translation.x - center_x).abs() > slack {
         let delta = (center_x - camera.translation.x) * time.delta_seconds() * follow_speed;
         let new_x = camera.translation.x + delta;
-        let new_x = new_x.clamp(pixel_projection.left, pixel_projection.right);
+        let new_x = new_x.clamp(
+            -(game_world.width / 2. + pixel_projection.left),
+            game_world.width / 2. - pixel_projection.right,
+        );
         camera.translation.x = new_x;
     }
 
     if (camera.translation.y - center_y).abs() > slack {
         let delta = (center_y - camera.translation.y) * time.delta_seconds() * follow_speed;
         let new_y = camera.translation.y + delta;
-        let new_y = new_y.clamp(pixel_projection.bottom, pixel_projection.top);
+        let new_y = new_y.clamp(
+            -(game_world.height / 2. + pixel_projection.bottom),
+            game_world.height / 2. - pixel_projection.top,
+        );
         camera.translation.y = new_y;
     }
 }

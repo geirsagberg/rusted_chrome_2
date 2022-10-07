@@ -135,7 +135,7 @@ pub struct InputBits {
 enum RollbackStage {
     PreUpdate,
     Update,
-    PostPhysics,
+    PostUpdate,
 }
 
 fn get_input_manager_systems() -> SystemSet {
@@ -184,6 +184,11 @@ impl Plugin for RollbackPlugin {
                             .with_system_set(get_world_rollback_systems()),
                     )
                     .with_stage(
+                        RollbackStage::PostUpdate,
+                        SystemStage::parallel()
+                            .with_system_set(SystemSet::new().with_system(flip_facing)),
+                    )
+                    .with_stage(
                         PhysicsStages::SyncBackend,
                         SystemStage::parallel().with_system_set(
                             RapierPhysicsPlugin::<NoUserData>::get_systems(
@@ -206,11 +211,6 @@ impl Plugin for RollbackPlugin {
                                 PhysicsStages::Writeback,
                             ),
                         ),
-                    )
-                    .with_stage(
-                        RollbackStage::PostPhysics,
-                        SystemStage::parallel()
-                            .with_system_set(SystemSet::new().with_system(flip_facing)),
                     ),
             )
             .build(app);
