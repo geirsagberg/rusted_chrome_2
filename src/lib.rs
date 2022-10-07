@@ -5,6 +5,7 @@ use bevy::app::App;
 use bevy::diagnostic::LogDiagnosticsPlugin;
 use bevy::math::vec2;
 use bevy::prelude::*;
+use bevy_ecs_tilemap::TilemapPlugin;
 use bevy_ggrs::GGRSPlugin;
 use bevy_prototype_debug_lines::DebugLinesPlugin;
 use bevy_prototype_lyon::prelude::ShapePlugin;
@@ -28,6 +29,7 @@ use leafwing_input_manager::systems::{release_on_disable, tick_action_state, upd
 use loading::LoadingPlugin;
 use platforms::PlatformsPlugin;
 use player::{get_player_rollback_systems, Gun, Lifetime, Player, PlayerPlugin};
+use tiled_map::TiledMapPlugin;
 use world::{get_world_rollback_systems, WorldPlugin};
 
 mod animation;
@@ -40,6 +42,7 @@ mod loading;
 mod platforms;
 mod player;
 mod screen_diags;
+mod tiled_map;
 mod world;
 
 // This example game uses States to separate logic
@@ -83,6 +86,8 @@ impl Plugin for GamePlugin {
             .add_plugin(CameraPlugin)
             .add_plugin(ShapePlugin)
             .add_plugin(FpsPlugin)
+            .add_plugin(TilemapPlugin)
+            .add_plugin(TiledMapPlugin)
             .add_plugin(RollbackPlugin)
             .add_plugin(DebugLinesPlugin::default())
             .add_plugin(RapierDebugRenderPlugin::default())

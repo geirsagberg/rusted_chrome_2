@@ -53,18 +53,6 @@ impl Default for Standing {
     }
 }
 
-#[derive(Copy, Clone)]
-enum CollisionGroup {
-    Default = 1 << 0,
-    Bullet = 1 << 1,
-}
-
-impl CollisionGroup {
-    fn as_bits(self) -> u32 {
-        self as u32
-    }
-}
-
 /// This plugin handles player related stuff like movement
 /// Player logic is only active during the State `GameState::Playing`
 impl Plugin for PlayerPlugin {
@@ -273,10 +261,7 @@ fn shoot(
                     .insert(Rollback::new(rollback_id_provider.next_id()))
                     .insert(RigidBody::Dynamic)
                     .insert(Collider::ball(1.))
-                    .insert(CollisionGroups::new(
-                        CollisionGroup::Bullet.as_bits(),
-                        CollisionGroup::Default.as_bits(),
-                    ))
+                    .insert(CollisionGroups::new(Group::GROUP_2, Group::all()))
                     .insert(Restitution::new(0.5))
                     .insert(GravityScale(0.))
                     .insert(Lifetime::from_seconds(2.0))
