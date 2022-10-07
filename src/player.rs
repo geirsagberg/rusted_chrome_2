@@ -172,6 +172,7 @@ fn spawn_player(
         .insert(Collider::capsule_y(8., 8.))
         .insert(ColliderScale::Absolute(vec2(1., 1.)))
         .insert(ColliderMassProperties::Mass(80.0))
+        .insert(Ccd { enabled: true })
         .insert(Facing::Right)
         .insert(CameraTarget::with_radius(100.))
         .insert(Aiming::default())
@@ -233,7 +234,7 @@ fn shoot(
     textures: Res<TextureAssets>,
     mut rollback_id_provider: ResMut<RollbackIdProvider>,
 ) {
-    let bullet_speed = 200.;
+    let bullet_speed = 600.;
     for (children, velocity, action_state) in &query {
         if action_state.pressed(PlayerAction::Shoot) {
             let arm_children = arm_query.get(children[0]).unwrap();
@@ -255,14 +256,23 @@ fn shoot(
                 commands
                     .spawn_bundle(SpriteBundle {
                         texture: textures.bullet.clone(),
-                        transform,
+                        transform: Transform::from_translation(transform.translation),
                         ..default()
                     })
                     .insert(Rollback::new(rollback_id_provider.next_id()))
                     .insert(RigidBody::Dynamic)
                     .insert(Collider::ball(1.))
-                    .insert(CollisionGroups::new(Group::GROUP_2, Group::all()))
-                    .insert(Restitution::new(0.5))
+                    .insert(LockedAxes::ROTATION_LOCKED)
+                    .insert(CollisionGroups::new(Group::GROUP_2, Group::GROUP_1))
+                    .insert(Ccd { enabled: true })
+                    .insert(Restitution {
+                        coefficient: 1.,
+                        combine_rule: CoefficientCombineRule::Max,
+                    })
+                    .insert(Friction {
+                        coefficient: 0.,
+                        combine_rule: CoefficientCombineRule::Min,
+                    })
                     .insert(GravityScale(0.))
                     .insert(Lifetime::from_seconds(2.0))
                     .insert(Velocity::linear(

@@ -1,8 +1,13 @@
 use bevy::prelude::*;
+
 use bevy_rapier2d::prelude::*;
 use iyes_loopless::prelude::AppLooplessStateExt;
 
-use crate::{loading::TextureAssets, GameState};
+use crate::{
+    loading::{TextureAssets, TiledAssets},
+    tiled_map::TiledMapBundle,
+    GameState,
+};
 
 pub struct WorldPlugin;
 
@@ -31,9 +36,18 @@ impl Plugin for WorldPlugin {
         app.insert_resource(GameWorld::default())
             .add_enter_system_set(
                 GameState::Playing,
-                SystemSet::new().with_system(create_world),
+                SystemSet::new()
+                    .with_system(create_world)
+                    .with_system(create_tiles),
             );
     }
+}
+
+fn create_tiles(mut commands: Commands, tiled: Res<TiledAssets>) {
+    commands.spawn_bundle(TiledMapBundle {
+        tiled_map: tiled.city.clone(),
+        ..default()
+    });
 }
 
 fn create_world(mut commands: Commands, textures: Res<TextureAssets>) {
@@ -43,13 +57,13 @@ fn create_world(mut commands: Commands, textures: Res<TextureAssets>) {
             custom_size: Some(Vec2::new(WORLD_WIDTH, WORLD_HEIGHT)),
             ..default()
         },
+        transform: Transform::from_xyz(0., 0., 0.),
         ..default()
     });
 }
 
 pub fn get_world_rollback_systems() -> SystemSet {
     SystemSet::new().with_system(wrap_around_world)
-    // .with_system(clamp_to_world)
 }
 
 fn wrap_around_world(mut query: Query<(&mut Transform, &Collider)>, world: Res<GameWorld>) {

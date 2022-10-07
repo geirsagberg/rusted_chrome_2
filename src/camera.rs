@@ -24,7 +24,7 @@ impl Plugin for CameraPlugin {
     }
 }
 fn setup_camera(mut commands: Commands) {
-    commands.spawn_bundle(PixelCameraBundle::from_zoom(1));
+    commands.spawn_bundle(PixelCameraBundle::from_zoom(2));
 }
 
 fn follow_targets(

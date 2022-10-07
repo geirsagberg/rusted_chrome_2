@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use bevy_asset_loader::prelude::*;
 
 use crate::atlas_data::{AnimationSpriteSheetLoader, AnimationSpriteSheetMeta};
+use crate::tiled_map::{TiledLoader, TiledMap};
 use crate::GameState;
 
 pub struct LoadingPlugin;
@@ -14,11 +15,13 @@ impl Plugin for LoadingPlugin {
         app.register_type::<TextureAtlasSprite>()
             .add_asset::<AnimationSpriteSheetMeta>()
             .add_asset_loader(AnimationSpriteSheetLoader)
+            .add_asset_loader(TiledLoader)
             .add_loading_state(
                 LoadingState::new(GameState::Loading)
                     .continue_to_state(GameState::Playing)
                     .with_collection::<FontAssets>()
                     .with_collection::<AudioAssets>()
+                    .with_collection::<TiledAssets>()
                     .with_collection::<TextureAssets>(),
             );
     }
@@ -53,4 +56,10 @@ pub struct TextureAssets {
     pub shoot_effect: Handle<AnimationSpriteSheetMeta>,
     #[asset(path = "textures/bullet.png")]
     pub bullet: Handle<Image>,
+}
+
+#[derive(AssetCollection)]
+pub struct TiledAssets {
+    #[asset(path = "tiles/city.tmx")]
+    pub city: Handle<TiledMap>,
 }

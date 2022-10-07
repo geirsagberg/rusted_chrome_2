@@ -14,7 +14,7 @@
       "name": "Quick Launch",
       "type": "node-terminal",
       "request": "launch",
-      "command": "cargo watch -w src -x run --features dev"
+      "command": "cargo watch -w src -w assets -x run --features dev"
     }
   ]
 }

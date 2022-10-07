@@ -10,9 +10,10 @@ use bevy_ggrs::GGRSPlugin;
 use bevy_prototype_debug_lines::DebugLinesPlugin;
 use bevy_prototype_lyon::prelude::ShapePlugin;
 use bevy_rapier2d::prelude::{
-    AdditionalMassProperties, ExternalForce, ExternalImpulse, GravityScale, NoUserData,
-    PhysicsStages, RapierConfiguration, RapierPhysicsPlugin, TimestepMode, Velocity,
+    ExternalForce, ExternalImpulse, GravityScale, NoUserData, PhysicsStages, RapierConfiguration,
+    RapierPhysicsPlugin, TimestepMode, Velocity,
 };
+use bevy_rapier2d::rapier::prelude::IntegrationParameters;
 use bevy_rapier2d::render::RapierDebugRenderPlugin;
 use camera::CameraPlugin;
 use components::aiming::Aiming;
@@ -45,9 +46,6 @@ mod screen_diags;
 mod tiled_map;
 mod world;
 
-// This example game uses States to separate logic
-// See https://bevy-cheatbook.github.io/programming/states.html
-// Or https://github.com/bevyengine/bevy/blob/main/examples/ecs/state.rs
 #[derive(Clone, Eq, PartialEq, Debug, Hash, Copy)]
 enum GameState {
     // During the loading State the LoadingPlugin will load our assets
@@ -78,16 +76,16 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(ClearColor(Color::GRAY))
             .add_loopless_state(GameState::Loading)
+            .add_plugin(TilemapPlugin)
+            .add_plugin(TiledMapPlugin)
             .add_plugin(LoadingPlugin)
             .add_plugin(PlayerPlugin)
-            .add_plugin(PlatformsPlugin)
             .add_plugin(WorldPlugin)
             .add_plugin(AnimationPlugin)
+            .add_plugin(PlatformsPlugin)
             .add_plugin(CameraPlugin)
             .add_plugin(ShapePlugin)
             .add_plugin(FpsPlugin)
-            .add_plugin(TilemapPlugin)
-            .add_plugin(TiledMapPlugin)
             .add_plugin(RollbackPlugin)
             .add_plugin(DebugLinesPlugin::default())
             .add_plugin(RapierDebugRenderPlugin::default())
@@ -102,6 +100,10 @@ impl Plugin for GamePlugin {
                     dt: 1. / PHYSICS_FPS as f32,
                     substeps: 1,
                 },
+                ..default()
+            })
+            .insert_resource(IntegrationParameters {
+                max_ccd_substeps: 5,
                 ..default()
             })
             .init_resource::<ToggleActions<PlayerAction>>()
@@ -167,7 +169,6 @@ impl Plugin for RollbackPlugin {
             .with_input_system(map_player_input)
             .register_rollback_type::<Transform>()
             .register_rollback_type::<Velocity>()
-            .register_rollback_type::<AdditionalMassProperties>()
             .register_rollback_type::<ExternalForce>()
             .register_rollback_type::<ExternalImpulse>()
             .register_rollback_type::<GravityScale>()

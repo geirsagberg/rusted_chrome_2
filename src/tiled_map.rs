@@ -55,7 +55,7 @@ impl AssetLoader for TiledLoader {
     ) -> bevy::asset::BoxedFuture<'a, anyhow::Result<(), anyhow::Error>> {
         Box::pin(async move {
             let root_dir = load_context.path().parent().unwrap();
-            let map = tiled::parse(BufReader::new(bytes))?;
+            let map = tiled::parse_with_path(BufReader::new(bytes), load_context.path())?;
 
             let mut dependencies = Vec::new();
             let mut handles = HashMap::default();
