@@ -1,10 +1,15 @@
-use bevy::prelude::Component;
+use bevy::{prelude::Component, reflect::Reflect};
 
-#[cfg_attr(feature = "debug", derive(bevy_inspector_egui::Inspectable))]
-#[derive(Component, PartialEq, Eq, Clone, Debug)]
+#[derive(Component, PartialEq, Eq, Clone, Debug, Reflect)]
 pub enum Facing {
     Left,
     Right,
+}
+
+impl Default for Facing {
+    fn default() -> Self {
+        Self::Right
+    }
 }
 
 impl Facing {

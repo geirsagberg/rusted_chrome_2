@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use bevy::math::vec2;
+use bevy::math::{vec2, vec3};
 use bevy::prelude::*;
 use bevy::sprite::Anchor;
 use bevy_ggrs::{Rollback, RollbackIdProvider, SessionType};
@@ -143,6 +143,7 @@ fn spawn_player(
 
     input_map
         .insert(KeyCode::E, PlayerAction::Shoot)
+        .insert(MouseButton::Left, PlayerAction::Shoot)
         .insert(VirtualDPad::wasd(), PlayerAction::Move)
         .insert(KeyCode::Space, PlayerAction::Jump);
     commands
@@ -181,6 +182,7 @@ fn spawn_player(
         .insert(RigidBody::Dynamic)
         .insert(LockedAxes::ROTATION_LOCKED)
         .insert(Collider::capsule_y(8., 8.))
+        .insert(ColliderScale::Absolute(vec2(1., 1.)))
         .insert(ColliderMassProperties::Mass(80.0))
         .insert(Facing::Right)
         .insert(CameraTarget::with_radius(100.))
@@ -254,11 +256,11 @@ fn shoot(
 
                 let transform = gun_transform
                     .compute_transform()
-                    .mul_transform(Transform::from_xyz(0., 0., 0.1));
+                    .mul_transform(Transform::from_xyz(2., 0., 0.1));
 
                 let forward = transform
                     .rotation
-                    .mul_vec3(Vec3::new(5., 0., 0.) * transform.scale)
+                    .mul_vec3(vec3(transform.scale.x, 0., 0.))
                     .normalize()
                     .truncate();
 
@@ -275,9 +277,12 @@ fn shoot(
                         CollisionGroup::Bullet.as_bits(),
                         CollisionGroup::Default.as_bits(),
                     ))
+                    .insert(Restitution::new(0.5))
                     .insert(GravityScale(0.))
                     .insert(Lifetime::from_seconds(2.0))
-                    .insert(Velocity::linear(forward * bullet_speed + velocity.linvel));
+                    .insert(Velocity::linear(
+                        forward * bullet_speed + velocity.linvel * 0.5,
+                    ));
             }
         }
     }

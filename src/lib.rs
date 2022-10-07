@@ -99,7 +99,6 @@ impl Plugin for GamePlugin {
                 },
                 ..default()
             })
-            .add_system(flip_facing)
             .init_resource::<ToggleActions<PlayerAction>>()
             .init_resource::<ClashStrategy>();
 
@@ -112,11 +111,7 @@ impl Plugin for GamePlugin {
 
 fn flip_facing(mut query: Query<(&mut Transform, &Facing)>) {
     for (mut transform, facing) in &mut query {
-        transform.rotation = if facing.is_left() {
-            Quat::from_rotation_y(std::f32::consts::PI)
-        } else {
-            Quat::default()
-        };
+        transform.scale.x = if facing.is_left() { -1. } else { 1. };
     }
 }
 
@@ -140,6 +135,7 @@ pub struct InputBits {
 enum RollbackStage {
     PreUpdate,
     Update,
+    PostPhysics,
 }
 
 fn get_input_manager_systems() -> SystemSet {
@@ -172,6 +168,7 @@ impl Plugin for RollbackPlugin {
             .register_rollback_type::<GravityScale>()
             .register_rollback_type::<Aiming>()
             .register_rollback_type::<Lifetime>()
+            .register_rollback_type::<Facing>()
             .register_rollback_type::<Gun>()
             // these systems will be executed as part of the advance frame update
             .with_rollback_schedule(
@@ -209,6 +206,11 @@ impl Plugin for RollbackPlugin {
                                 PhysicsStages::Writeback,
                             ),
                         ),
+                    )
+                    .with_stage(
+                        RollbackStage::PostPhysics,
+                        SystemStage::parallel()
+                            .with_system_set(SystemSet::new().with_system(flip_facing)),
                     ),
             )
             .build(app);
