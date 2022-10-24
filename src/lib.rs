@@ -5,7 +5,7 @@ use bevy::app::App;
 use bevy::diagnostic::LogDiagnosticsPlugin;
 use bevy::math::vec2;
 use bevy::prelude::*;
-use bevy_ecs_tilemap::TilemapPlugin;
+use bevy_ecs_ldtk::LdtkPlugin;
 use bevy_ggrs::GGRSPlugin;
 use bevy_prototype_debug_lines::DebugLinesPlugin;
 use bevy_prototype_lyon::prelude::ShapePlugin;
@@ -30,7 +30,6 @@ use leafwing_input_manager::systems::{release_on_disable, tick_action_state, upd
 use loading::LoadingPlugin;
 use platforms::PlatformsPlugin;
 use player::{get_player_rollback_systems, Gun, Lifetime, Player, PlayerPlugin};
-use tiled_map::TiledMapPlugin;
 use world::{get_world_rollback_systems, WorldPlugin};
 
 mod animation;
@@ -43,7 +42,6 @@ mod loading;
 mod platforms;
 mod player;
 mod screen_diags;
-mod tiled_map;
 mod world;
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash, Copy)]
@@ -76,8 +74,7 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(ClearColor(Color::GRAY))
             .add_loopless_state(GameState::Loading)
-            .add_plugin(TilemapPlugin)
-            .add_plugin(TiledMapPlugin)
+            .add_plugin(LdtkPlugin)
             .add_plugin(LoadingPlugin)
             .add_plugin(PlayerPlugin)
             .add_plugin(WorldPlugin)

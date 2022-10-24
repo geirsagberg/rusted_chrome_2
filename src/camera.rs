@@ -23,8 +23,12 @@ impl Plugin for CameraPlugin {
             .add_system(follow_targets);
     }
 }
-fn setup_camera(mut commands: Commands) {
-    commands.spawn_bundle(PixelCameraBundle::from_zoom(2));
+fn setup_camera(mut commands: Commands, game_world: Res<GameWorld>) {
+    let mut camera = PixelCameraBundle::from_zoom(2);
+    camera.transform.translation.x = game_world.width / 2.;
+    camera.transform.translation.y = game_world.height / 2.;
+
+    commands.spawn_bundle(camera);
 }
 
 fn follow_targets(
@@ -72,8 +76,8 @@ fn follow_targets(
         let delta = (center_x - camera.translation.x) * time.delta_seconds() * follow_speed;
         let new_x = camera.translation.x + delta;
         let new_x = new_x.clamp(
-            -(game_world.width / 2. + pixel_projection.left),
-            game_world.width / 2. - pixel_projection.right,
+            -pixel_projection.left,
+            game_world.width - pixel_projection.right,
         );
         camera.translation.x = new_x;
     }
@@ -82,8 +86,8 @@ fn follow_targets(
         let delta = (center_y - camera.translation.y) * time.delta_seconds() * follow_speed;
         let new_y = camera.translation.y + delta;
         let new_y = new_y.clamp(
-            -(game_world.height / 2. + pixel_projection.bottom),
-            game_world.height / 2. - pixel_projection.top,
+            -pixel_projection.bottom,
+            game_world.height - pixel_projection.top,
         );
         camera.translation.y = new_y;
     }

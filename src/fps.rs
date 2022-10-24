@@ -40,11 +40,11 @@ fn toggle_framepace_plugin(
             Limiter::Off => Limiter::from_framerate(app_settings.fps.into()),
         }
     }
-    if input.just_pressed(KeyCode::NumpadAdd) {
+    if input.just_pressed(KeyCode::NumpadAdd) || input.just_pressed(KeyCode::Equals) {
         app_settings.fps += 1;
         settings.limiter = Limiter::from_framerate(app_settings.fps.into());
     }
-    if input.just_pressed(KeyCode::NumpadSubtract) {
+    if input.just_pressed(KeyCode::NumpadSubtract) || input.just_pressed(KeyCode::Minus) {
         app_settings.fps -= 1;
         if app_settings.fps == 0 {
             app_settings.fps = 1;

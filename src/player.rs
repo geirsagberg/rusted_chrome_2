@@ -77,7 +77,14 @@ pub fn get_player_rollback_systems() -> SystemSet {
         .with_system(shoot)
         .with_system(gun_time)
         .with_system(lifetime_cleanup)
+        // .with_system(log_player_position)
         .into()
+}
+
+fn log_player_position(query: Query<(&Player, &Transform)>) {
+    for (player, position) in &query {
+        println!("Player {:?} position: {:?}", player.handle, position);
+    }
 }
 
 fn start_session(mut commands: Commands) {
@@ -130,7 +137,7 @@ fn spawn_player(
     let mut input_map = InputMap::default();
 
     input_map
-        .insert(KeyCode::E, PlayerAction::Shoot)
+        .insert(KeyCode::J, PlayerAction::Shoot)
         .insert(MouseButton::Left, PlayerAction::Shoot)
         .insert(VirtualDPad::wasd(), PlayerAction::Move)
         .insert(KeyCode::Space, PlayerAction::Jump);
@@ -141,7 +148,7 @@ fn spawn_player(
                 ..default()
             },
             texture_atlas: cyborg.atlas_handle.clone(),
-            transform: Transform::from_xyz(0., 0., 1.),
+            transform: Transform::from_xyz(480., 256., 3.),
             ..default()
         })
         .with_children(|parent| {
@@ -213,7 +220,7 @@ fn move_player(
         velocity.linvel.x = axis_pair.x() * speed;
 
         if action_state.just_pressed(PlayerAction::Jump) && standing.is_standing {
-            velocity.linvel.y = 256.;
+            velocity.linvel.y = 384.;
         };
     }
 }
@@ -234,7 +241,7 @@ fn shoot(
     textures: Res<TextureAssets>,
     mut rollback_id_provider: ResMut<RollbackIdProvider>,
 ) {
-    let bullet_speed = 600.;
+    let bullet_speed = 400.;
     for (children, velocity, action_state) in &query {
         if action_state.pressed(PlayerAction::Shoot) {
             let arm_children = arm_query.get(children[0]).unwrap();
@@ -256,7 +263,8 @@ fn shoot(
                 commands
                     .spawn_bundle(SpriteBundle {
                         texture: textures.bullet.clone(),
-                        transform: Transform::from_translation(transform.translation),
+                        transform: Transform::from_translation(transform.translation)
+                            .with_scale(Vec3::splat(2.)),
                         ..default()
                     })
                     .insert(Rollback::new(rollback_id_provider.next_id()))
