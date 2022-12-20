@@ -18,6 +18,7 @@ impl Plugin for FpsPlugin {
     }
 }
 
+#[derive(Resource)]
 struct FpsSettings {
     fps: u32,
 }

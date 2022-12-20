@@ -1,8 +1,4 @@
-use bevy::{
-    math::{vec2, vec3},
-    prelude::*,
-};
-use bevy_rapier2d::prelude::*;
+use bevy::prelude::*;
 
 pub struct PlatformsPlugin;
 

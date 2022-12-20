@@ -1,3 +1,4 @@
+use crate::GameState;
 use bevy::{
     prelude::*,
     utils::{HashMap, HashSet},
@@ -6,10 +7,9 @@ use bevy_ecs_ldtk::prelude::*;
 use bevy_rapier2d::prelude::*;
 use iyes_loopless::prelude::AppLooplessStateExt;
 
-use crate::GameState;
-
 pub struct WorldPlugin;
 
+#[derive(Resource, Clone, Debug)]
 pub struct GameWorld {
     pub width: f32,
     pub height: f32,
@@ -197,25 +197,25 @@ pub fn spawn_wall_colliders(
                     // 1. Adjusts the transforms to be relative to the level for free
                     // 2. the colliders will be despawned automatically when levels unload
                     for wall_rect in wall_rects {
-                        level
-                            .spawn()
-                            .insert(Collider::cuboid(
+                        level.spawn((
+                            Collider::cuboid(
                                 (wall_rect.right as f32 - wall_rect.left as f32 + 1.)
                                     * grid_size as f32
                                     / 2.,
                                 (wall_rect.top as f32 - wall_rect.bottom as f32 + 1.)
                                     * grid_size as f32
                                     / 2.,
-                            ))
-                            .insert(RigidBody::Fixed)
-                            .insert(Transform::from_xyz(
+                            ),
+                            RigidBody::Fixed,
+                            Transform::from_xyz(
                                 (wall_rect.left + wall_rect.right + 1) as f32 * grid_size as f32
                                     / 2.,
                                 (wall_rect.bottom + wall_rect.top + 1) as f32 * grid_size as f32
                                     / 2.,
                                 0.,
-                            ))
-                            .insert(GlobalTransform::default());
+                            ),
+                            GlobalTransform::default(),
+                        ))
                     }
                 });
             }
