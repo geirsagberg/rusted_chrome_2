@@ -30,6 +30,17 @@ pub struct Standing {
 }
 
 #[derive(Component, Reflect, Default, Clone, Debug)]
+pub struct Health {
+    pub health: f32,
+}
+
+impl Health {
+    pub fn new(health: f32) -> Self {
+        Self { health }
+    }
+}
+
+#[derive(Component, Reflect, Default, Clone, Debug)]
 pub struct Lifetime {
     pub timer: Timer,
 }
@@ -77,8 +88,17 @@ pub fn get_player_rollback_systems() -> SystemSet {
         .with_system(shoot)
         .with_system(gun_time)
         .with_system(lifetime_cleanup)
+        .with_system(health_remove_on_hit)
         // .with_system(log_player_position)
         .into()
+}
+
+fn health_remove_on_hit(query: Query<(&Health)>) {
+    for health in &query {
+        if health.health <= 0. {
+            println!("Player died");
+        }
+    }
 }
 
 fn log_player_position(query: Query<(&Player, &Transform)>) {
@@ -186,6 +206,7 @@ fn spawn_player(
         .insert(Standing::default())
         .insert(animation)
         .insert(Player::default())
+        .insert(Health::new(100.))
         .insert(Velocity::linear(vec2(0., 0.)))
         .insert_bundle(InputManagerBundle::<PlayerAction> {
             action_state: ActionState::default(),
