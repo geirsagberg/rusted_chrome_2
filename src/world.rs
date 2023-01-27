@@ -10,6 +10,7 @@ use crate::GameState;
 
 pub struct WorldPlugin;
 
+#[derive(Resource)]
 pub struct GameWorld {
     pub width: f32,
     pub height: f32,
@@ -198,7 +199,7 @@ pub fn spawn_wall_colliders(
                     // 2. the colliders will be despawned automatically when levels unload
                     for wall_rect in wall_rects {
                         level
-                            .spawn()
+                            .spawn(RigidBody::Fixed)
                             .insert(Collider::cuboid(
                                 (wall_rect.right as f32 - wall_rect.left as f32 + 1.)
                                     * grid_size as f32
@@ -207,7 +208,6 @@ pub fn spawn_wall_colliders(
                                     * grid_size as f32
                                     / 2.,
                             ))
-                            .insert(RigidBody::Fixed)
                             .insert(Transform::from_xyz(
                                 (wall_rect.left + wall_rect.right + 1) as f32 * grid_size as f32
                                     / 2.,
@@ -224,7 +224,7 @@ pub fn spawn_wall_colliders(
 }
 
 fn load_level(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn_bundle(LdtkWorldBundle {
+    commands.spawn(LdtkWorldBundle {
         ldtk_handle: asset_server.load("levels/level.ldtk"),
         ..default()
     });

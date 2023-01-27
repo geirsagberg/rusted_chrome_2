@@ -72,6 +72,8 @@ impl AssetLoader for AnimationSpriteSheetLoader {
                     meta.tile_size.as_vec2(),
                     meta.columns,
                     meta.rows,
+                    None,
+                    None,
                 ))
                 .with_dependency(image_path),
             );

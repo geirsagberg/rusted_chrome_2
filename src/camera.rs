@@ -28,7 +28,7 @@ fn setup_camera(mut commands: Commands, game_world: Res<GameWorld>) {
     camera.transform.translation.x = game_world.width / 2.;
     camera.transform.translation.y = game_world.height / 2.;
 
-    commands.spawn_bundle(camera);
+    commands.spawn(camera);
 }
 
 fn follow_targets(

@@ -1,8 +1,6 @@
 use bevy::core::{Pod, Zeroable};
 
 use bevy::app::App;
-#[cfg(debug_assertions)]
-use bevy::diagnostic::LogDiagnosticsPlugin;
 use bevy::math::vec2;
 use bevy::prelude::*;
 use bevy_ecs_ldtk::LdtkPlugin;
@@ -13,7 +11,6 @@ use bevy_rapier2d::prelude::{
     ExternalForce, ExternalImpulse, GravityScale, NoUserData, PhysicsStages, RapierConfiguration,
     RapierPhysicsPlugin, TimestepMode, Velocity,
 };
-use bevy_rapier2d::rapier::prelude::IntegrationParameters;
 use bevy_rapier2d::render::RapierDebugRenderPlugin;
 use camera::CameraPlugin;
 use components::aiming::Aiming;
@@ -99,10 +96,6 @@ impl Plugin for GamePlugin {
                 },
                 ..default()
             })
-            .insert_resource(IntegrationParameters {
-                max_ccd_substeps: 5,
-                ..default()
-            })
             .init_resource::<ToggleActions<PlayerAction>>()
             .init_resource::<ClashStrategy>();
 
@@ -164,15 +157,15 @@ impl Plugin for RollbackPlugin {
             .with_update_frequency(PHYSICS_FPS)
             // define system that returns inputs given a player handle, so GGRS can send the inputs around
             .with_input_system(map_player_input)
-            .register_rollback_type::<Transform>()
-            .register_rollback_type::<Velocity>()
-            .register_rollback_type::<ExternalForce>()
-            .register_rollback_type::<ExternalImpulse>()
-            .register_rollback_type::<GravityScale>()
-            .register_rollback_type::<Aiming>()
-            .register_rollback_type::<Lifetime>()
-            .register_rollback_type::<Facing>()
-            .register_rollback_type::<Gun>()
+            .register_rollback_component::<Transform>()
+            .register_rollback_component::<Velocity>()
+            .register_rollback_component::<ExternalForce>()
+            .register_rollback_component::<ExternalImpulse>()
+            .register_rollback_component::<GravityScale>()
+            .register_rollback_component::<Aiming>()
+            .register_rollback_component::<Lifetime>()
+            .register_rollback_component::<Facing>()
+            .register_rollback_component::<Gun>()
             // these systems will be executed as part of the advance frame update
             .with_rollback_schedule(
                 Schedule::default()

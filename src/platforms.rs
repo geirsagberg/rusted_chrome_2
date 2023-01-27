@@ -1,11 +1,6 @@
-use bevy::{
-    math::{vec2, vec3},
-    prelude::*,
-};
-use bevy_rapier2d::prelude::*;
-
+use bevy::prelude::*;
 pub struct PlatformsPlugin;
 
 impl Plugin for PlatformsPlugin {
-    fn build(&self, app: &mut App) {}
+    fn build(&self, _app: &mut App) {}
 }

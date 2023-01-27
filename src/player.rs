@@ -3,7 +3,7 @@ use std::time::Duration;
 use bevy::math::{vec2, vec3};
 use bevy::prelude::*;
 use bevy::sprite::Anchor;
-use bevy_ggrs::{Rollback, RollbackIdProvider, SessionType};
+use bevy_ggrs::{Rollback, RollbackIdProvider, Session};
 use bevy_rapier2d::prelude::*;
 use ggrs::{PlayerHandle, PlayerType, SessionBuilder};
 use iyes_loopless::prelude::*;
@@ -53,7 +53,7 @@ pub struct Gun {
 impl Lifetime {
     pub fn from_seconds(seconds: f32) -> Self {
         Self {
-            timer: Timer::from_seconds(seconds, false),
+            timer: Timer::from_seconds(seconds, TimerMode::Once),
         }
     }
 }
@@ -93,17 +93,11 @@ pub fn get_player_rollback_systems() -> SystemSet {
         .into()
 }
 
-fn health_remove_on_hit(query: Query<(&Health)>) {
+fn health_remove_on_hit(query: Query<&Health>) {
     for health in &query {
         if health.health <= 0. {
             println!("Player died");
         }
-    }
-}
-
-fn log_player_position(query: Query<(&Player, &Transform)>) {
-    for (player, position) in &query {
-        println!("Player {:?} position: {:?}", player.handle, position);
     }
 }
 
@@ -117,8 +111,7 @@ fn start_session(mut commands: Commands) {
         .start_synctest_session()
         .expect("");
 
-    commands.insert_resource(session);
-    commands.insert_resource(SessionType::SyncTestSession);
+    commands.insert_resource(Session::SyncTestSession(session));
 }
 
 fn check_if_standing(
@@ -162,7 +155,7 @@ fn spawn_player(
         .insert(VirtualDPad::wasd(), PlayerAction::Move)
         .insert(KeyCode::Space, PlayerAction::Jump);
     commands
-        .spawn_bundle(SpriteSheetBundle {
+        .spawn(SpriteSheetBundle {
             sprite: TextureAtlasSprite {
                 anchor: Anchor::Custom(vec2(0., -0.125)),
                 ..default()
@@ -173,7 +166,7 @@ fn spawn_player(
         })
         .with_children(|parent| {
             parent
-                .spawn_bundle(SpriteBundle {
+                .spawn(SpriteBundle {
                     texture: textures.hand.clone(),
                     transform: Transform::from_xyz(4., 4., -0.1),
                     ..default()
@@ -182,14 +175,14 @@ fn spawn_player(
                 .insert(AimingChild)
                 .with_children(|parent| {
                     parent
-                        .spawn_bundle(SpriteBundle {
+                        .spawn(SpriteBundle {
                             texture: textures.gun.clone(),
                             transform: Transform::from_xyz(12., 2., 0.05),
                             ..default()
                         })
                         .insert(Rollback::new(rollback_id_provider.next_id()))
                         .insert(Gun {
-                            shot_timer: Timer::from_seconds(0.1, false),
+                            shot_timer: Timer::from_seconds(0.1, TimerMode::Once),
                         });
                 });
         })
@@ -208,7 +201,7 @@ fn spawn_player(
         .insert(Player::default())
         .insert(Health::new(100.))
         .insert(Velocity::linear(vec2(0., 0.)))
-        .insert_bundle(InputManagerBundle::<PlayerAction> {
+        .insert(InputManagerBundle::<PlayerAction> {
             action_state: ActionState::default(),
             input_map,
         });
@@ -282,7 +275,7 @@ fn shoot(
                     .truncate();
 
                 commands
-                    .spawn_bundle(SpriteBundle {
+                    .spawn(SpriteBundle {
                         texture: textures.bullet.clone(),
                         transform: Transform::from_translation(transform.translation)
                             .with_scale(Vec3::splat(2.)),
