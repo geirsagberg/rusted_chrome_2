@@ -1,3 +1,4 @@
+#![allow(unused_parens)]
 use bevy::app::App;
 use bevy::math::vec2;
 use bevy::prelude::*;
