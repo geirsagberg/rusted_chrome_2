@@ -7,9 +7,8 @@ pub struct DebugPlugin;
 
 impl Plugin for DebugPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(set_defaults)
-            .add_system(toggle_rapier_debug)
-            .add_system(toggle_fps);
+        app.add_systems(Startup, set_defaults)
+            .add_systems(Update, (toggle_rapier_debug, toggle_fps));
     }
 }
 
@@ -31,7 +30,7 @@ fn toggle_rapier_debug(
 }
 
 fn toggle_fps(mut screen_diags_state: ResMut<ScreenDiagsState>, input: Res<Input<KeyCode>>) {
-    if input.pressed(KeyCode::LControl) && input.just_pressed(KeyCode::F) {
+    if input.pressed(KeyCode::ControlLeft) && input.just_pressed(KeyCode::F) {
         if screen_diags_state.enabled() {
             screen_diags_state.disable();
         } else {

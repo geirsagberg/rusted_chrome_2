@@ -7,14 +7,13 @@ pub struct FpsPlugin;
 
 impl Plugin for FpsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(ScreenDiagsPlugin)
-            .add_plugin(FramepacePlugin)
+        app.add_plugins((ScreenDiagsPlugin, FramepacePlugin))
             .insert_resource(FramepaceSettings {
                 limiter: Limiter::from_framerate(PHYSICS_FPS as f64),
                 ..Default::default()
             })
             .insert_resource(FpsSettings::default())
-            .add_system(toggle_framepace_plugin);
+            .add_systems(Update, toggle_framepace_plugin);
     }
 }
 

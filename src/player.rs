@@ -3,26 +3,20 @@ use std::time::Duration;
 use bevy::math::{vec2, vec3};
 use bevy::prelude::*;
 use bevy::sprite::Anchor;
-use bevy_ggrs::{Rollback, RollbackIdProvider, Session};
 use bevy_rapier2d::prelude::*;
-use ggrs::{PlayerHandle, PlayerType, SessionBuilder};
-use iyes_loopless::prelude::*;
 use leafwing_input_manager::prelude::*;
 
 use crate::animation::Animation;
-use crate::atlas_data::AnimationSpriteSheetMeta;
 use crate::camera::CameraTarget;
 use crate::components::aiming::{Aiming, AimingChild};
 use crate::components::facing::Facing;
 use crate::loading::TextureAssets;
-use crate::{GGRSConfig, GameState, PlayerAction, PHYSICS_FPS, PHYSICS_STEP};
+use crate::{GameState, PlayerAction, PHYSICS_STEP};
 
 pub struct PlayerPlugin;
 
 #[derive(Component, Default)]
-pub struct Player {
-    pub handle: PlayerHandle,
-}
+pub struct Player {}
 
 #[derive(Component)]
 pub struct Standing {
@@ -68,29 +62,23 @@ impl Default for Standing {
 /// Player logic is only active during the State `GameState::Playing`
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_enter_system_set(
-            GameState::Playing,
-            SystemSet::new()
-                .with_system(spawn_player)
-                .with_system(start_session),
+        app.add_systems(OnEnter(GameState::Playing), spawn_player);
+        app.add_systems(
+            Update,
+            (
+                move_player,
+                animate_player,
+                change_aim,
+                rotate_aim_children,
+                check_if_standing,
+                shoot,
+                gun_time,
+                lifetime_cleanup,
+                health_remove_on_hit,
+            )
+                .run_if(in_state(GameState::Playing)),
         );
     }
-}
-
-pub fn get_player_rollback_systems() -> SystemSet {
-    ConditionSet::new()
-        .run_in_state(GameState::Playing)
-        .with_system(move_player)
-        .with_system(animate_player)
-        .with_system(change_aim)
-        .with_system(rotate_aim_children)
-        .with_system(check_if_standing)
-        .with_system(shoot)
-        .with_system(gun_time)
-        .with_system(lifetime_cleanup)
-        .with_system(health_remove_on_hit)
-        // .with_system(log_player_position)
-        .into()
 }
 
 fn health_remove_on_hit(query: Query<&Health>) {
@@ -99,19 +87,6 @@ fn health_remove_on_hit(query: Query<&Health>) {
             println!("Player died");
         }
     }
-}
-
-fn start_session(mut commands: Commands) {
-    let session = SessionBuilder::<GGRSConfig>::new()
-        .with_num_players(1)
-        .with_fps(PHYSICS_FPS)
-        .expect("Invalid FPS")
-        .add_player(PlayerType::Local, 0)
-        .expect("Could not add local player")
-        .start_synctest_session()
-        .expect("");
-
-    commands.insert_resource(Session::SyncTestSession(session));
 }
 
 fn check_if_standing(
@@ -138,15 +113,7 @@ fn check_if_standing(
     }
 }
 
-fn spawn_player(
-    mut commands: Commands,
-    textures: Res<TextureAssets>,
-    animated_sprite_sheet_assets: Res<Assets<AnimationSpriteSheetMeta>>,
-    mut rollback_id_provider: ResMut<RollbackIdProvider>,
-) {
-    let cyborg = animated_sprite_sheet_assets.get(&textures.cyborg).unwrap();
-    let mut animation = Animation::new(cyborg.animation_frame_duration, cyborg.animations.clone());
-    animation.play("idle", true);
+fn spawn_player(mut commands: Commands, textures: Res<TextureAssets>) {
     let mut input_map = InputMap::default();
 
     input_map
@@ -160,7 +127,7 @@ fn spawn_player(
                 anchor: Anchor::Custom(vec2(0., -0.125)),
                 ..default()
             },
-            texture_atlas: cyborg.atlas_handle.clone(),
+            texture_atlas: textures.cyborg.clone(),
             transform: Transform::from_xyz(480., 256., 3.),
             ..default()
         })
@@ -171,7 +138,6 @@ fn spawn_player(
                     transform: Transform::from_xyz(4., 4., -0.1),
                     ..default()
                 })
-                .insert(Rollback::new(rollback_id_provider.next_id()))
                 .insert(AimingChild)
                 .with_children(|parent| {
                     parent
@@ -180,13 +146,11 @@ fn spawn_player(
                             transform: Transform::from_xyz(12., 2., 0.05),
                             ..default()
                         })
-                        .insert(Rollback::new(rollback_id_provider.next_id()))
                         .insert(Gun {
                             shot_timer: Timer::from_seconds(0.1, TimerMode::Once),
                         });
                 });
         })
-        .insert(Rollback::new(rollback_id_provider.next_id()))
         .insert(RigidBody::Dynamic)
         .insert(LockedAxes::ROTATION_LOCKED)
         .insert(Collider::capsule_y(8., 8.))
@@ -197,7 +161,6 @@ fn spawn_player(
         .insert(CameraTarget::with_radius(100.))
         .insert(Aiming::default())
         .insert(Standing::default())
-        .insert(animation)
         .insert(Player::default())
         .insert(Health::new(100.))
         .insert(Velocity::linear(vec2(0., 0.)))
@@ -253,7 +216,6 @@ fn shoot(
     arm_query: Query<&Children, With<AimingChild>>,
     mut gun_query: Query<(&GlobalTransform, &mut Gun)>,
     textures: Res<TextureAssets>,
-    mut rollback_id_provider: ResMut<RollbackIdProvider>,
 ) {
     let bullet_speed = 400.;
     for (children, velocity, action_state) in &query {
@@ -281,7 +243,6 @@ fn shoot(
                             .with_scale(Vec3::splat(2.)),
                         ..default()
                     })
-                    .insert(Rollback::new(rollback_id_provider.next_id()))
                     .insert(RigidBody::Dynamic)
                     .insert(Collider::ball(1.))
                     .insert(LockedAxes::ROTATION_LOCKED)

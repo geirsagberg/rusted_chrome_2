@@ -7,22 +7,20 @@ use rusted_chrome::GamePlugin;
 
 fn main() {
     App::new()
-        .add_plugins(
+        .add_plugins((
             DefaultPlugins
                 .set(WindowPlugin {
-                    window: WindowDescriptor {
-                        width: 1280.,
-                        height: 800.,
+                    primary_window: Some(Window {
                         title: "Rusted Chrome".to_string(),
+                        resolution: (1280., 800.).into(),
                         present_mode: PresentMode::AutoVsync,
-                        // mode: bevy::window::WindowMode::BorderlessFullscreen,
                         resizable: false,
-                        ..Default::default()
-                    },
+                        ..default()
+                    }),
                     ..default()
                 })
                 .set(ImagePlugin::default_nearest()),
-        )
-        .add_plugin(GamePlugin)
+            GamePlugin,
+        ))
         .run();
 }

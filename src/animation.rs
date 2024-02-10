@@ -1,23 +1,16 @@
 use std::ops::Range;
 
 use bevy::{prelude::*, sprite::TextureAtlasSprite, utils::HashMap};
-use iyes_loopless::condition::ConditionSet;
 use serde::de::SeqAccess;
 use serde::Deserializer;
 
-use crate::{CoreStage, GameState};
+use crate::GameState;
 
 pub struct AnimationPlugin;
 
 impl Plugin for AnimationPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set_to_stage(
-            CoreStage::Last,
-            ConditionSet::new()
-                .run_in_state(GameState::Playing)
-                .with_system(animation_cycling)
-                .into(),
-        );
+        app.add_systems(Last, animation_cycling.run_if(in_state(GameState::Playing)));
     }
 }
 

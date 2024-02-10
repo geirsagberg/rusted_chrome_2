@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_pixel_camera::{PixelCameraBundle, PixelCameraPlugin, PixelProjection};
+use bevy_pixel_camera::{PixelCameraPlugin, PixelViewport, PixelZoom};
 
 use crate::world::GameWorld;
 
@@ -18,29 +18,31 @@ impl CameraTarget {
 
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(PixelCameraPlugin)
-            .add_startup_system(setup_camera)
-            .add_system(follow_targets);
+        app.add_plugins(PixelCameraPlugin)
+            .add_systems(Startup, setup_camera)
+            .add_systems(Update, follow_targets);
     }
 }
 fn setup_camera(mut commands: Commands, game_world: Res<GameWorld>) {
-    let mut camera = PixelCameraBundle::from_zoom(2);
-    camera.transform.translation.x = game_world.width / 2.;
-    camera.transform.translation.y = game_world.height / 2.;
+    // camera.transform.translation.x = game_world.width / 2.;
+    // camera.transform.translation.y = game_world.height / 2.;
 
-    commands.spawn(camera);
+    let mut camera2d_bundle = Camera2dBundle::default();
+    camera2d_bundle.transform.translation.x = game_world.width / 2.;
+    camera2d_bundle.transform.translation.y = game_world.height / 2.;
+    commands.spawn((camera2d_bundle, PixelZoom::Fixed(2), PixelViewport));
 }
 
 fn follow_targets(
     query: Query<&Transform, With<CameraTarget>>,
     mut camera_query: Query<
-        (&mut Transform, &PixelProjection),
+        (&mut Transform, &PixelViewport),
         (With<Camera>, Without<CameraTarget>),
     >,
     time: Res<Time>,
     game_world: Res<GameWorld>,
 ) {
-    let (mut camera, pixel_projection) = camera_query.single_mut();
+    let (mut camera, pixel_viewport) = camera_query.single_mut();
 
     // find max and min x and y of targets
     let mut min_x = f32::MAX;
@@ -75,20 +77,20 @@ fn follow_targets(
     if (camera.translation.x - center_x).abs() > slack {
         let delta = (center_x - camera.translation.x) * time.delta_seconds() * follow_speed;
         let new_x = camera.translation.x + delta;
-        let new_x = new_x.clamp(
-            -pixel_projection.left,
-            game_world.width - pixel_projection.right,
-        );
+        // let new_x = new_x.clamp(
+        //     -pixel_viewport.left,
+        //     game_world.width - pixel_viewport.right,
+        // );
         camera.translation.x = new_x;
     }
 
     if (camera.translation.y - center_y).abs() > slack {
         let delta = (center_y - camera.translation.y) * time.delta_seconds() * follow_speed;
         let new_y = camera.translation.y + delta;
-        let new_y = new_y.clamp(
-            -pixel_projection.bottom,
-            game_world.height - pixel_projection.top,
-        );
+        // let new_y = new_y.clamp(
+        //     -pixel_viewport.bottom,
+        //     game_world.height - pixel_viewport.top,
+        // );
         camera.translation.y = new_y;
     }
 }

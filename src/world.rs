@@ -4,9 +4,6 @@ use bevy::{
 };
 use bevy_ecs_ldtk::prelude::*;
 use bevy_rapier2d::prelude::*;
-use iyes_loopless::prelude::AppLooplessStateExt;
-
-use crate::GameState;
 
 pub struct WorldPlugin;
 
@@ -34,11 +31,12 @@ pub struct ClampToWorld;
 impl Plugin for WorldPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(GameWorld::default())
-            .insert_resource(LevelSelection::Index(0))
+            .insert_resource(LevelSelection::Uid(0))
             .register_ldtk_int_cell::<WallBundle>(1)
+            .add_systems(Update, wrap_around_world)
             // .register_ldtk_entity::<SpawnPoint>("Entities")
-            .add_enter_system_set(GameState::Playing, SystemSet::new().with_system(load_level))
-            .add_system(spawn_wall_colliders);
+            .add_systems(Startup, load_level)
+            .add_systems(Update, spawn_wall_collision);
     }
 }
 
@@ -49,8 +47,7 @@ pub struct Wall;
 pub struct WallBundle {
     wall: Wall,
 }
-
-/// Spawns collisions for the walls of a level
+/// Spawns heron collisions for the walls of a level
 ///
 /// You could just insert a ColliderBundle in to the WallBundle,
 /// but this spawns a different collider for EVERY wall tile.
@@ -66,23 +63,23 @@ pub struct WallBundle {
 /// 2. combine wall tiles into flat "plates" in each individual row
 /// 3. combine the plates into rectangles across multiple rows wherever possible
 /// 4. spawn colliders for each rectangle
-pub fn spawn_wall_colliders(
+pub fn spawn_wall_collision(
     mut commands: Commands,
     wall_query: Query<(&GridCoords, &Parent), Added<Wall>>,
     parent_query: Query<&Parent, Without<Wall>>,
-    level_query: Query<(Entity, &Handle<LdtkLevel>)>,
-    levels: Res<Assets<LdtkLevel>>,
+    level_query: Query<(Entity, &LevelIid)>,
+    ldtk_projects: Query<&Handle<LdtkProject>>,
+    ldtk_project_assets: Res<Assets<LdtkProject>>,
 ) {
     /// Represents a wide wall that is 1 tile tall
     /// Used to spawn wall collisions
-    #[derive(Copy, Clone, Eq, PartialEq, Debug, Default, Hash)]
+    #[derive(Clone, Eq, PartialEq, Debug, Default, Hash)]
     struct Plate {
         left: i32,
         right: i32,
     }
 
     /// A simple rectangle type representing a wall of any size
-    #[derive(Copy, Clone, Eq, PartialEq, Debug, Default, Hash)]
     struct Rect {
         left: i32,
         right: i32,
@@ -106,28 +103,29 @@ pub fn spawn_wall_colliders(
         if let Ok(grandparent) = parent_query.get(parent.get()) {
             level_to_wall_locations
                 .entry(grandparent.get())
-                .or_insert(HashSet::new())
+                .or_default()
                 .insert(grid_coords);
         }
     });
 
     if !wall_query.is_empty() {
-        level_query.for_each(|(level_entity, level_handle)| {
+        level_query.for_each(|(level_entity, level_iid)| {
             if let Some(level_walls) = level_to_wall_locations.get(&level_entity) {
-                let level = levels
-                    .get(level_handle)
-                    .expect("Level should be loaded by this point");
+                let ldtk_project = ldtk_project_assets
+                    .get(ldtk_projects.single())
+                    .expect("Project should be loaded if level has spawned");
+
+                let level = ldtk_project
+                    .as_standalone()
+                    .get_loaded_level_by_iid(&level_iid.to_string())
+                    .expect("Spawned level should exist in LDtk project");
 
                 let LayerInstance {
                     c_wid: width,
                     c_hei: height,
                     grid_size,
                     ..
-                } = level
-                    .level
-                    .layer_instances
-                    .clone()
-                    .expect("Level asset should have layers")[0];
+                } = level.layer_instances()[0];
 
                 // combine wall tiles into flat "plates" in each individual row
                 let mut plate_stack: Vec<Vec<Plate>> = Vec::new();
@@ -136,8 +134,7 @@ pub fn spawn_wall_colliders(
                     let mut row_plates: Vec<Plate> = Vec::new();
                     let mut plate_start = None;
 
-                    // + 1 to the width so the algorithm "terminates" plates that touch the right
-                    // edge
+                    // + 1 to the width so the algorithm "terminates" plates that touch the right edge
                     for x in 0..width + 1 {
                         match (plate_start, level_walls.contains(&GridCoords { x, y })) {
                             (Some(s), false) => {
@@ -156,40 +153,34 @@ pub fn spawn_wall_colliders(
                 }
 
                 // combine "plates" into rectangles across multiple rows
+                let mut rect_builder: HashMap<Plate, Rect> = HashMap::new();
+                let mut prev_row: Vec<Plate> = Vec::new();
                 let mut wall_rects: Vec<Rect> = Vec::new();
-                let mut previous_rects: HashMap<Plate, Rect> = HashMap::new();
 
-                // an extra empty row so the algorithm "terminates" the rects that touch the top
-                // edge
+                // an extra empty row so the algorithm "finishes" the rects that touch the top edge
                 plate_stack.push(Vec::new());
 
-                for (y, row) in plate_stack.iter().enumerate() {
-                    let mut current_rects: HashMap<Plate, Rect> = HashMap::new();
-                    for plate in row {
-                        if let Some(previous_rect) = previous_rects.remove(plate) {
-                            current_rects.insert(
-                                *plate,
-                                Rect {
-                                    top: previous_rect.top + 1,
-                                    ..previous_rect
-                                },
-                            );
-                        } else {
-                            current_rects.insert(
-                                *plate,
-                                Rect {
-                                    bottom: y as i32,
-                                    top: y as i32,
-                                    left: plate.left,
-                                    right: plate.right,
-                                },
-                            );
+                for (y, current_row) in plate_stack.into_iter().enumerate() {
+                    for prev_plate in &prev_row {
+                        if !current_row.contains(prev_plate) {
+                            // remove the finished rect so that the same plate in the future starts a new rect
+                            if let Some(rect) = rect_builder.remove(prev_plate) {
+                                wall_rects.push(rect);
+                            }
                         }
                     }
-
-                    // Any plates that weren't removed above have terminated
-                    wall_rects.append(&mut previous_rects.values().copied().collect());
-                    previous_rects = current_rects;
+                    for plate in &current_row {
+                        rect_builder
+                            .entry(plate.clone())
+                            .and_modify(|e| e.top += 1)
+                            .or_insert(Rect {
+                                bottom: y as i32,
+                                top: y as i32,
+                                left: plate.left,
+                                right: plate.right,
+                            });
+                    }
+                    prev_row = current_row;
                 }
 
                 commands.entity(level_entity).with_children(|level| {
@@ -199,7 +190,7 @@ pub fn spawn_wall_colliders(
                     // 2. the colliders will be despawned automatically when levels unload
                     for wall_rect in wall_rects {
                         level
-                            .spawn(RigidBody::Fixed)
+                            .spawn_empty()
                             .insert(Collider::cuboid(
                                 (wall_rect.right as f32 - wall_rect.left as f32 + 1.)
                                     * grid_size as f32
@@ -208,6 +199,8 @@ pub fn spawn_wall_colliders(
                                     * grid_size as f32
                                     / 2.,
                             ))
+                            .insert(RigidBody::Fixed)
+                            .insert(Friction::new(1.0))
                             .insert(Transform::from_xyz(
                                 (wall_rect.left + wall_rect.right + 1) as f32 * grid_size as f32
                                     / 2.,
@@ -228,10 +221,6 @@ fn load_level(mut commands: Commands, asset_server: Res<AssetServer>) {
         ldtk_handle: asset_server.load("levels/level.ldtk"),
         ..default()
     });
-}
-
-pub fn get_world_rollback_systems() -> SystemSet {
-    SystemSet::new().with_system(wrap_around_world)
 }
 
 fn wrap_around_world(mut query: Query<(&mut Transform, &Collider)>, world: Res<GameWorld>) {

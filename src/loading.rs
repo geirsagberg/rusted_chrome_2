@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 use bevy_asset_loader::prelude::*;
 
-use crate::atlas_data::{AnimationSpriteSheetLoader, AnimationSpriteSheetMeta};
 use crate::GameState;
 
 pub struct LoadingPlugin;
@@ -11,15 +10,12 @@ pub struct LoadingPlugin;
 /// If interested, take a look at https://bevy-cheatbook.github.io/features/assets.html
 impl Plugin for LoadingPlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<TextureAtlasSprite>()
-            .add_asset::<AnimationSpriteSheetMeta>()
-            .add_asset_loader(AnimationSpriteSheetLoader)
-            .add_loading_state(
-                LoadingState::new(GameState::Loading)
-                    .continue_to_state(GameState::Playing)
-                    .with_collection::<FontAssets>()
-                    .with_collection::<TextureAssets>(),
-            );
+        app.register_type::<TextureAtlasSprite>().add_loading_state(
+            LoadingState::new(GameState::Loading)
+                .continue_to_state(GameState::Playing)
+                .load_collection::<FontAssets>()
+                .load_collection::<TextureAssets>(),
+        );
     }
 }
 
@@ -34,14 +30,13 @@ pub struct FontAssets {
 
 #[derive(AssetCollection, Resource)]
 pub struct TextureAssets {
-    #[asset(path = "textures/cyborg.yml")]
-    pub cyborg: Handle<AnimationSpriteSheetMeta>,
+    #[asset(texture_atlas(tile_size_x = 32., tile_size_y = 48., columns = 6, rows = 5))]
+    #[asset(path = "textures/cyborg.png")]
+    pub cyborg: Handle<TextureAtlas>,
     #[asset(path = "textures/hand.png")]
     pub hand: Handle<Image>,
     #[asset(path = "textures/gun.png")]
     pub gun: Handle<Image>,
-    #[asset(path = "textures/shoot_effect.yml")]
-    pub shoot_effect: Handle<AnimationSpriteSheetMeta>,
     #[asset(path = "textures/bullet.png")]
     pub bullet: Handle<Image>,
 }
