@@ -3,10 +3,11 @@ use std::time::Duration;
 use bevy::math::{vec2, vec3};
 use bevy::prelude::*;
 use bevy::sprite::Anchor;
+use bevy::utils::hashbrown::HashMap;
 use bevy_rapier2d::prelude::*;
 use leafwing_input_manager::prelude::*;
 
-use crate::animation::Animation;
+use crate::animation::{Animation, Clip};
 use crate::camera::CameraTarget;
 use crate::components::aiming::{Aiming, AimingChild};
 use crate::components::facing::Facing;
@@ -151,6 +152,39 @@ fn spawn_player(mut commands: Commands, textures: Res<TextureAssets>) {
                         });
                 });
         })
+        .insert(Animation::new(
+            0.12,
+            HashMap::from([
+                (
+                    String::from("idle"),
+                    Clip {
+                        frames: 0..3,
+                        repeat: true,
+                    },
+                ),
+                (
+                    String::from("jumping"),
+                    Clip {
+                        frames: 6..9,
+                        repeat: false,
+                    },
+                ),
+                (
+                    String::from("running"),
+                    Clip {
+                        frames: 12..17,
+                        repeat: true,
+                    },
+                ),
+                (
+                    String::from("walking"),
+                    Clip {
+                        frames: 24..29,
+                        repeat: true,
+                    },
+                ),
+            ]),
+        ))
         .insert(RigidBody::Dynamic)
         .insert(LockedAxes::ROTATION_LOCKED)
         .insert(Collider::capsule_y(8., 8.))
