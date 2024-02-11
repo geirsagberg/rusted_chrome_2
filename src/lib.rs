@@ -5,6 +5,7 @@ use bevy::prelude::*;
 use bevy_ecs_ldtk::LdtkPlugin;
 use bevy_rapier2d::prelude::*;
 use bevy_rapier2d::render::RapierDebugRenderPlugin;
+use blood::BloodPlugin;
 use camera::CameraPlugin;
 use components::facing::Facing;
 use debug::DebugPlugin;
@@ -18,6 +19,7 @@ use player::PlayerPlugin;
 use world::WorldPlugin;
 
 mod animation;
+mod blood;
 mod camera;
 mod components;
 mod debug;
@@ -65,6 +67,7 @@ impl Plugin for GamePlugin {
             .add_plugins(PlatformsPlugin)
             .add_plugins(CameraPlugin)
             .add_plugins(FpsPlugin)
+            .add_plugins(BloodPlugin)
             .add_plugins(leafwing_input_manager::prelude::InputManagerPlugin::<
                 PlayerAction,
             >::default())

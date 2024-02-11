@@ -45,6 +45,9 @@ pub struct Gun {
     pub shot_timer: Timer,
 }
 
+#[derive(Component, Reflect)]
+pub struct Bullet;
+
 impl Lifetime {
     pub fn from_seconds(seconds: f32) -> Self {
         Self {
@@ -185,6 +188,7 @@ fn spawn_player(mut commands: Commands, textures: Res<TextureAssets>) {
                 ),
             ]),
         ))
+        .insert(ActiveEvents::COLLISION_EVENTS)
         .insert(RigidBody::Dynamic)
         .insert(LockedAxes::ROTATION_LOCKED)
         .insert(Collider::capsule_y(8., 8.))
@@ -277,6 +281,7 @@ fn shoot(
                             .with_scale(Vec3::splat(2.)),
                         ..default()
                     })
+                    .insert(Bullet)
                     .insert(RigidBody::Dynamic)
                     .insert(Collider::ball(1.))
                     .insert(LockedAxes::ROTATION_LOCKED)
